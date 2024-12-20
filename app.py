@@ -12,7 +12,7 @@ import pandas as pd
 warnings.filterwarnings('ignore')
 
 # Başlık
-st.title("YOLOv8 ile Nesne Algılama")
+st.title("Görsel Segmentasyon")
 st.sidebar.title("Proje Ayarları")
 
 # Modeli varsayılan olarak yükleme

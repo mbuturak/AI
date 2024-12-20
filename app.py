@@ -269,14 +269,15 @@ if uploaded_file is not None:
                         labels=list(class_counts.keys()),
                         values=list(class_counts.values()),
                         hole=.3,
-                        textinfo='label+percent',  # Sayı yerine etiket ve yüzde göster
+                        textinfo='label+value+percent',  # Etiket, sayı ve yüzde göster
+                        texttemplate='%{label}<br>%{value} adet<br>(%{percent})',  # Metin formatı
                         marker=dict(colors=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']),
                         textfont=dict(size=14),
                         textposition='inside',
                         insidetextorientation='radial',
-                        hoverinfo='label+value+percent',  # Hover'da etiket, sayı ve yüzde göster
+                        hoverinfo='label+value+percent',
                         hoverlabel=dict(font=dict(size=14, color='white')),
-                        rotation=90  # Metinlerin okunabilirliğini artırmak için döndür
+                        rotation=90
                     )
                 ])
                 pie_fig.update_layout(

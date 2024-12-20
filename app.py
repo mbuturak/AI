@@ -21,7 +21,7 @@ try:
     model = YOLO(model_path)
     st.sidebar.success("Model başarıyla yüklendi!")
 except Exception as e:
-    //st.sidebar.error(f"Model yüklenemedi: {e}")
+    # st.sidebar.error(f"Model yüklenemedi: {e}")
     st.stop()
 
 # Görsel yükleme

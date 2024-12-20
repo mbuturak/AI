@@ -42,15 +42,8 @@ if uploaded_file is not None:
         col1, col2 = st.columns(2)
         
         with col1:
-            # Etiketlenmiş görsel - sadece etiketleri göster, kutuları gizle
-            annotated_image = results[0].plot(
-                boxes=False,  # Kutuları gizle
-                labels=True,  # Etiketleri göster
-                conf=True,    # Güven skorlarını göster
-                line_width=2, # Çizgi kalınlığı
-                font_size=16, # Yazı boyutu
-                hide_conf=False # Güven skorlarını göster
-            )
+            # Etiketlenmiş görsel
+            annotated_image = results[0].plot()
             st.image(annotated_image, caption="Algılama Sonuçları", use_container_width=True)
             
             # Güven skoru hakkında bilgilendirme

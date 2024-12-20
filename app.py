@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image
 import warnings
 import plotly.graph_objects as go
+from skimage import measure
 
 # Hide warnings
 warnings.filterwarnings('ignore')
@@ -30,72 +31,58 @@ if uploaded_file is not None:
     # Perform detection automatically
     with st.spinner("Detecting objects..."):
         img_array = np.array(image)
-        results = model(img_array)
+        results = model(img_array, retina_masks=True)  # retina_masks=True daha detaylı maskeler için
         
         # Get detection results
-        boxes = results[0].boxes
+        masks = results[0].masks
         img = results[0].orig_img
 
         # Create Plotly figure
         fig = go.Figure()
 
-        # Add image
+        # Add image as background
         fig.add_trace(go.Image(z=img))
 
         # Define color palette
         colors = [
-            'rgba(255, 0, 0, 0.5)',  # Red
-            'rgba(255, 165, 0, 0.5)',  # Orange
-            'rgba(255, 255, 0, 0.5)',  # Yellow
-            'rgba(0, 255, 0, 0.5)',  # Green
-            'rgba(0, 255, 255, 0.5)',  # Cyan
-            'rgba(0, 0, 255, 0.5)',  # Blue
-            'rgba(128, 0, 128, 0.5)'   # Purple
+            '#FF0000',  # Kırmızı
+            '#FFA500',  # Turuncu
+            '#FFFF00',  # Sarı
+            '#00FF00',  # Yeşil
+            '#00FFFF',  # Cyan
+            '#0000FF',  # Mavi
+            '#800080'   # Mor
         ]
 
-        # Add detected areas with curved edges
-        for i, box in enumerate(boxes):
-            x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-            conf = float(box.conf)
-            cls = int(box.cls)
-            label = results[0].names[cls]
-            
-            # Select color
-            color = colors[i % len(colors)]
-            
-            # Create a smooth oval-like path for the box
-            cx, cy = (x1 + x2) / 2, (y1 + y2) / 2  # Center point
-            rx, ry = (x2 - x1) / 2, (y2 - y1) / 2  # Radii for x and y
-
-            # Define SVG path for an ellipse
-            path = (
-                f"M {cx - rx},{cy} "
-                f"A {rx},{ry} 0 1,1 {cx + rx},{cy} "
-                f"A {rx},{ry} 0 1,1 {cx - rx},{cy}"
-            )
-            
-            # Add shape with curved edges
-            fig.add_shape(
-                type="path",
-                path=path,
-                line=dict(
-                    color=color,
-                    width=3,
-                ),
-                fillcolor=color,
-                opacity=0.3
-            )
-            
-            # Add hover annotation
-            fig.add_trace(go.Scatter(
-                x=[cx],
-                y=[cy],
-                mode="markers",
-                marker=dict(size=5, color=color),
-                hoverinfo="text",
-                text=f"{label}<br>Confidence: {conf:.2f}",
-                showlegend=False
-            ))
+        # Add detected areas with masks
+        if masks is not None:
+            for i, mask in enumerate(masks):
+                # Maske verilerini numpy dizisine dönüştür
+                mask_array = mask.data.cpu().numpy()[0]
+                
+                # Maskenin konturlarını bul
+                contours = measure.find_contours(mask_array, 0.5)
+                
+                # Her kontur için
+                for contour in contours:
+                    # Kontur noktalarını Plotly formatına dönüştür
+                    x_coords = contour[:, 1]
+                    y_coords = contour[:, 0]
+                    
+                    # Renk seç
+                    color = colors[i % len(colors)]
+                    
+                    # Kontur çizgisini ekle
+                    fig.add_trace(go.Scatter(
+                        x=x_coords,
+                        y=y_coords,
+                        fill="toself",
+                        fillcolor=color,
+                        line=dict(color=color),
+                        opacity=0.5,
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ))
 
         # Update layout
         fig.update_layout(

@@ -2,13 +2,18 @@ import streamlit as st
 from ultralytics import YOLO
 import numpy as np
 from PIL import Image
+import os
+from pathlib import Path
 
 # Başlık
 st.title("YOLOv8 ile Nesne Algılama")
 st.sidebar.title("Proje Ayarları")
 
-# Modeli varsayılan olarak yükleme
-model_path = "weights/best.pt"
+# Mevcut dosyanın bulunduğu dizini al
+current_dir = Path(__file__).parent
+
+# Model dosyasının yolunu oluştur
+model_path = str(current_dir / "weights" / "best.pt")
 
 try:
     model = YOLO(model_path)

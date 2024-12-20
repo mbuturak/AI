@@ -10,9 +10,86 @@ import os
 # Hide warnings
 warnings.filterwarnings('ignore')
 
+# Dil seçenekleri için metinler
+TEXTS = {
+    'English': {
+        'title': "Object Detection",
+        'settings': "Project Settings",
+        'language': "Language",
+        'upload': "Upload an Image",
+        'loading': "Detecting objects...",
+        'distribution_title': "Distribution of Detected Regions",
+        'metrics_title': "Model Performance Metrics",
+        'avg_confidence': "Average Confidence",
+        'total_detections': "Total Detections",
+        'analysis_title': "Analysis Explanation",
+        'distribution_text': """
+        **Distribution Analysis:**
+        The bar chart shows the frequency of detected regions in the X-Ray image. 
+        Each bar represents the number of occurrences for each detected anatomical structure, 
+        providing insights into the distribution of different bone structures in the image.
+        """,
+        'metrics_text': """
+        **Performance Metrics:**
+        - **Average Confidence**: Indicates the model's average confidence level across all detections. 
+          Higher values suggest stronger certainty in the predictions.
+        - **Total Detections**: Shows the total number of regions identified in the image, 
+          helping to understand the complexity of the analysis.
+        """,
+        'note_text': """
+        **Note:** This analysis is based on AI-powered detection and should be used as 
+        a supportive tool alongside professional medical evaluation. The confidence scores 
+        and distributions provide additional context but should not be used as the sole 
+        basis for medical decisions.
+        """
+    },
+    'Türkçe': {
+        'title': "Nesne Tespiti",
+        'settings': "Proje Ayarları",
+        'language': "Dil",
+        'upload': "Görüntü Yükle",
+        'loading': "Nesneler tespit ediliyor...",
+        'distribution_title': "Tespit Edilen Bölgelerin Dağılımı",
+        'metrics_title': "Model Performans Metrikleri",
+        'avg_confidence': "Ortalama Güven",
+        'total_detections': "Toplam Tespit",
+        'analysis_title': "Analiz Açıklaması",
+        'distribution_text': """
+        **Dağılım Analizi:**
+        Grafik, X-Ray görüntüsünde tespit edilen bölgelerin sıklığını göstermektedir. 
+        Her çubuk, tespit edilen anatomik yapıların sayısını temsil eder ve 
+        farklı kemik yapılarının görüntüdeki dağılımı hakkında bilgi verir.
+        """,
+        'metrics_text': """
+        **Performans Metrikleri:**
+        - **Ortalama Güven**: Tüm tespitler için modelin ortalama güven seviyesini gösterir. 
+          Yüksek değerler, tahminlerde daha güçlü kesinlik olduğunu gösterir.
+        - **Toplam Tespit**: Görüntüde tanımlanan toplam bölge sayısını gösterir ve 
+          analizin karmaşıklığını anlamamıza yardımcı olur.
+        """,
+        'note_text': """
+        **Not:** Bu analiz yapay zeka destekli tespit üzerine kuruludur ve profesyonel 
+        tıbbi değerlendirme ile birlikte destekleyici bir araç olarak kullanılmalıdır. 
+        Güven skorları ve dağılımlar ek bağlam sağlar, ancak tek başına tıbbi kararlar 
+        için kullanılmamalıdır.
+        """
+    }
+}
+
 # Title
-st.title("Object Detection")
+st.title("X-Ray Analysis")
+
+# Sidebar
 st.sidebar.title("Project Settings")
+
+# Dil seçimi
+selected_language = st.sidebar.selectbox(
+    "Language / Dil",
+    ["English", "Türkçe"]
+)
+
+# Seçilen dile göre metinleri al
+texts = TEXTS[selected_language]
 
 # Model yükleme fonksiyonu
 def load_model(model_path):
@@ -38,7 +115,7 @@ if model is None:
     st.stop()
 
 # Image upload
-uploaded_file = st.file_uploader("Upload an Image", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader(texts['upload'], type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     try:
@@ -57,7 +134,7 @@ if uploaded_file is not None:
             img_array = (img_array * 255).astype(np.uint8)
         
         # Perform detection
-        with st.spinner("Detecting objects..."):
+        with st.spinner(texts['loading']):
             results = model.predict(img_array, conf=0.25)
             
             # Debug için sınıf isimlerini kontrol et
@@ -143,14 +220,12 @@ if uploaded_file is not None:
             st.plotly_chart(fig, use_container_width=True)
             
             # Analiz bölümü
-            st.markdown("---")  # Ayırıcı çizgi
+            st.markdown("---")
             
-            # İki kolon oluştur
             col1, col2 = st.columns(2)
             
             with col1:
-                # Tespit edilen bölgelerin dağılımı
-                st.subheader("Distribution of Detected Regions")
+                st.subheader(texts['distribution_title'])
                 
                 # Bölgelerin sayısını hesapla
                 class_counts = {}
@@ -177,47 +252,22 @@ if uploaded_file is not None:
                 )
                 st.plotly_chart(dist_fig, use_container_width=True)
                 
-                # Model performans metrikleri
-                st.subheader("Model Performance Metrics")
+                st.subheader(texts['metrics_title'])
                 
-                # Ortalama güven skoru
-                avg_conf = sum(float(box.conf) for box in boxes) / len(boxes) if boxes else 0
-                
-                # Metrik göstergeleri
                 col_metrics1, col_metrics2 = st.columns(2)
                 with col_metrics1:
-                    st.metric("Average Confidence", f"{avg_conf:.1%}")
+                    st.metric(texts['avg_confidence'], f"{avg_conf:.1%}")
                 with col_metrics2:
-                    st.metric("Total Detections", len(boxes))
+                    st.metric(texts['total_detections'], len(boxes))
             
             with col2:
-                # Açıklamalar
-                st.subheader("Analysis Explanation")
-                
-                # Dağılım açıklaması
-                st.markdown("""
-                **Distribution Analysis:**
-                The bar chart shows the frequency of detected regions in the X-Ray image. 
-                Each bar represents the number of occurrences for each detected anatomical structure, 
-                providing insights into the distribution of different bone structures in the image.
-                """)
-                
-                st.markdown("""
-                **Performance Metrics:**
-                - **Average Confidence**: Indicates the model's average confidence level across all detections. 
-                  Higher values suggest stronger certainty in the predictions.
-                - **Total Detections**: Shows the total number of regions identified in the image, 
-                  helping to understand the complexity of the analysis.
-                """)
-                
-                # Önemli notlar
-                st.markdown("""
-                **Note:** This analysis is based on AI-powered detection and should be used as 
-                a supportive tool alongside professional medical evaluation. The confidence scores 
-                and distributions provide additional context but should not be used as the sole 
-                basis for medical decisions.
-                """)
+                st.subheader(texts['analysis_title'])
+                st.markdown(texts['distribution_text'])
+                st.markdown(texts['metrics_text'])
+                st.markdown(texts['note_text'])
 
     except Exception as e:
-        st.error(f"Hata oluştu: {str(e)}")
-        st.error("Lütfen farklı bir görüntü deneyin veya sayfayı yenileyin.")
+        error_msg = "An error occurred" if selected_language == "English" else "Hata oluştu"
+        retry_msg = "Please try another image or refresh the page" if selected_language == "English" else "Lütfen farklı bir görüntü deneyin veya sayfayı yenileyin"
+        st.error(f"{error_msg}: {str(e)}")
+        st.error(retry_msg)

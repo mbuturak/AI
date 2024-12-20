@@ -87,14 +87,7 @@ if uploaded_file is not None:
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     conf = float(box.conf)
                     cls = int(box.cls)
-                    
-                    # Sınıf ismini al ve kontrol et
-                    try:
-                        label = results[0].names[cls]
-                        st.write(f"Tespit {i+1}: Sınıf {cls} -> {label}")
-                    except:
-                        label = f"Sınıf {cls}"
-                        st.write(f"Hata: Sınıf {cls} için isim bulunamadı")
+                    label = results[0].names[cls]
                     
                     # Merkez ve yarıçap hesapla
                     cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
@@ -116,6 +109,7 @@ if uploaded_file is not None:
                         fillcolor=color,
                         line=dict(color=color),
                         opacity=0.5,
+                        name=label,  # Trace adını label olarak ayarla
                         showlegend=False,
                         hoverinfo='text',
                         hovertext=f"{label}<br>Güven: {conf:.2%}",
@@ -134,7 +128,11 @@ if uploaded_file is not None:
                 plot_bgcolor='black',
                 paper_bgcolor='black',
                 width=800,
-                height=600
+                height=600,
+                hoverlabel=dict(
+                    namelength=-1  # Tüm ismi göster
+                ),
+                hovermode='closest'
             )
 
             # Display the plot

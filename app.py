@@ -142,6 +142,82 @@ if uploaded_file is not None:
             # Display the plot
             st.plotly_chart(fig, use_container_width=True)
             
+            # Analiz bölümü
+            st.markdown("---")  # Ayırıcı çizgi
+            
+            # İki kolon oluştur
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Tespit edilen bölgelerin dağılımı
+                st.subheader("Distribution of Detected Regions")
+                
+                # Bölgelerin sayısını hesapla
+                class_counts = {}
+                for box in boxes:
+                    cls = int(box.cls)
+                    label = results[0].names[cls]
+                    class_counts[label] = class_counts.get(label, 0) + 1
+                
+                # Dağılım grafiği
+                dist_fig = go.Figure(data=[
+                    go.Bar(
+                        x=list(class_counts.keys()),
+                        y=list(class_counts.values()),
+                        marker_color='#1f77b4'
+                    )
+                ])
+                dist_fig.update_layout(
+                    margin=dict(l=20, r=20, t=30, b=20),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='white'),
+                    xaxis=dict(showgrid=False),
+                    yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.1)')
+                )
+                st.plotly_chart(dist_fig, use_container_width=True)
+                
+                # Model performans metrikleri
+                st.subheader("Model Performance Metrics")
+                
+                # Ortalama güven skoru
+                avg_conf = sum(float(box.conf) for box in boxes) / len(boxes) if boxes else 0
+                
+                # Metrik göstergeleri
+                col_metrics1, col_metrics2 = st.columns(2)
+                with col_metrics1:
+                    st.metric("Average Confidence", f"{avg_conf:.1%}")
+                with col_metrics2:
+                    st.metric("Total Detections", len(boxes))
+            
+            with col2:
+                # Açıklamalar
+                st.subheader("Analysis Explanation")
+                
+                # Dağılım açıklaması
+                st.markdown("""
+                **Distribution Analysis:**
+                The bar chart shows the frequency of detected regions in the X-Ray image. 
+                Each bar represents the number of occurrences for each detected anatomical structure, 
+                providing insights into the distribution of different bone structures in the image.
+                """)
+                
+                st.markdown("""
+                **Performance Metrics:**
+                - **Average Confidence**: Indicates the model's average confidence level across all detections. 
+                  Higher values suggest stronger certainty in the predictions.
+                - **Total Detections**: Shows the total number of regions identified in the image, 
+                  helping to understand the complexity of the analysis.
+                """)
+                
+                # Önemli notlar
+                st.markdown("""
+                **Note:** This analysis is based on AI-powered detection and should be used as 
+                a supportive tool alongside professional medical evaluation. The confidence scores 
+                and distributions provide additional context but should not be used as the sole 
+                basis for medical decisions.
+                """)
+
     except Exception as e:
         st.error(f"Hata oluştu: {str(e)}")
         st.error("Lütfen farklı bir görüntü deneyin veya sayfayı yenileyin.")

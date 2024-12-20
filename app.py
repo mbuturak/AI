@@ -55,7 +55,7 @@ TEXTS = {
         'loading': "Nesneler tespit ediliyor...",
         'distribution_title': "Tespit Edilen Bölgelerin Dağılımı",
         'metrics_title': "Model Performans Metrikleri",
-        'avg_confidence': "Ortalama G��ven",
+        'avg_confidence': "Ortalama Güven",
         'total_detections': "Toplam Tespit",
         'analysis_title': "Analiz Açıklaması",
         'distribution_text': """
@@ -219,29 +219,27 @@ if uploaded_file is not None:
                 width=800,
                 height=600,
                 hoverlabel=dict(
-                    namelength=-1  # Tüm ismi göster
+                    namelength=-1
                 ),
                 hovermode='closest'
             )
 
-            # Display the plot
-            st.plotly_chart(fig, use_container_width=True)
-            
             # X-ray görüntülerini yan yana göster
             col_img1, col_img2 = st.columns(2)
             
             with col_img1:
                 st.markdown("**Original X-Ray**" if selected_language == "English" else "**Orijinal X-Ray**")
-                st.image(img_array)
+                st.image(img_array, use_column_width=True)
             
             with col_img2:
                 st.markdown("**Detected Regions**" if selected_language == "English" else "**Tespit Edilen Bölgeler**")
                 st.plotly_chart(fig, use_container_width=True)
-            
+
             # Analiz bölümü
             st.markdown("---")
             
-            col1, col2 = st.columns(2)
+            # Dağılım analizi için iki kolon oluştur
+            col1, col2 = st.columns([2, 1])  # Sol taraf daha geniş
             
             with col1:
                 st.subheader(texts['distribution_title'])
@@ -259,28 +257,28 @@ if uploaded_file is not None:
                         labels=list(class_counts.keys()),
                         values=list(class_counts.values()),
                         hole=.3,
-                        textinfo='value+percent',  # Hem sayı hem yüzde göster
+                        textinfo='value+percent',
                         marker=dict(colors=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']),
-                        textfont=dict(size=14)  # Yazı boyutunu artır
+                        textfont=dict(size=14)
                     )
                 ])
                 pie_fig.update_layout(
                     margin=dict(l=20, r=20, t=50, b=20),
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='white', size=14),  # Genel yazı boyutunu artır
+                    font=dict(color='white', size=14),
                     title=dict(
                         text="Bölge Dağılımı" if selected_language == "Türkçe" else "Region Distribution",
                         font=dict(color='white', size=16),
                         y=0.95
                     ),
-                    height=500,  # Grafiğin yüksekliğini artır
-                    showlegend=True,  # Göstergeyi göster
+                    height=600,  # Grafiği daha da büyüt
+                    showlegend=True,
                     legend=dict(
                         font=dict(color='white', size=12),
-                        orientation="h",  # Yatay gösterge
+                        orientation="h",
                         yanchor="bottom",
-                        y=-0.2,  # Göstergeyi grafiğin altına yerleştir
+                        y=-0.2,
                         xanchor="center",
                         x=0.5
                     )

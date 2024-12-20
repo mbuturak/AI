@@ -5,6 +5,7 @@ from PIL import Image
 import warnings
 import plotly.graph_objects as go
 import cv2
+import os
 
 # Hide warnings
 warnings.filterwarnings('ignore')
@@ -13,12 +14,27 @@ warnings.filterwarnings('ignore')
 st.title("Object Detection")
 st.sidebar.title("Project Settings")
 
-# Load model by default
-try:
-    model = YOLO("weights/best.pt", task='detect')
-    st.sidebar.success("Model loaded successfully!")
-except Exception as e:
-    st.sidebar.error(f"Failed to load model: {e}")
+# Model yükleme fonksiyonu
+def load_model(model_path):
+    if not os.path.exists(model_path):
+        st.sidebar.error(f"Model dosyası bulunamadı: {model_path}")
+        return None
+    
+    try:
+        model = YOLO(model_path, task='detect')
+        file_size = os.path.getsize(model_path) / (1024 * 1024)  # MB cinsinden
+        st.sidebar.success(f"Model başarıyla yüklendi! (Boyut: {file_size:.2f} MB)")
+        return model
+    except Exception as e:
+        st.sidebar.error(f"Model yüklenirken hata oluştu: {str(e)}")
+        return None
+
+# Model yükleme
+MODEL_PATH = "weights/best.pt"
+model = load_model(MODEL_PATH)
+
+if model is None:
+    st.error("Model yüklenemedi. Lütfen model dosyasını kontrol edin.")
     st.stop()
 
 # Image upload

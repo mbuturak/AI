@@ -66,6 +66,9 @@ if uploaded_file is not None:
                 boxes = results[0].boxes
                 for i, box in enumerate(boxes):
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                    conf = float(box.conf)
+                    cls = int(box.cls)
+                    label = results[0].names[cls]
                     
                     # Merkez ve yarıçap hesapla
                     cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
@@ -88,7 +91,12 @@ if uploaded_file is not None:
                         line=dict(color=color),
                         opacity=0.5,
                         showlegend=False,
-                        hoverinfo='skip'
+                        hoverinfo='text',
+                        hovertext=f"{label}<br>Güven: {conf:.2%}",
+                        hoverlabel=dict(
+                            bgcolor=color,
+                            font=dict(color='white')
+                        )
                     ))
 
             # Update layout

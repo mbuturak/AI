@@ -249,26 +249,34 @@ if uploaded_file is not None:
 
             # Plotly eventi için callback
             def handle_click(trace, points, state):
-                if len(points.point_inds) > 0:
+                if points and len(points.point_inds) > 0:
                     clicked_class = trace.customdata[points.point_inds[0]]
                     if st.session_state.get('selected_class') == clicked_class:
                         st.session_state.selected_class = None
                     else:
                         st.session_state.selected_class = clicked_class
-                    st.experimental_rerun()
+                    st.rerun()
 
             # Display the plot with callback
-            st.plotly_chart(fig, use_container_width=True, custom_events=['click'])
+            config = {
+                'displayModeBar': False,
+                'scrollZoom': False
+            }
+            st.plotly_chart(fig, use_container_width=True, config=config)
             
             if 'selected_class' not in st.session_state:
                 st.session_state.selected_class = None
 
             # Tıklama olayını dinle
-            clicked = st.experimental_get_query_params().get('plotly_click')
-            if clicked:
-                trace_index = int(clicked[0].split(':')[0])
-                point_index = int(clicked[0].split(':')[1])
-                handle_click(traces[trace_index], point_index)
+            if 'plotly_click' in st.query_params:
+                clicked_data = st.query_params['plotly_click']
+                if clicked_data:
+                    try:
+                        trace_index, point_index = map(int, clicked_data.split(':'))
+                        if 0 <= trace_index < len(traces):
+                            handle_click(traces[trace_index], {'point_inds': [point_index]}, None)
+                    except (ValueError, IndexError):
+                        pass
 
             # Analiz bölümü
             st.markdown("---")

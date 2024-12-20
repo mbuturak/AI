@@ -4,7 +4,6 @@ import numpy as np
 from PIL import Image
 import warnings
 import plotly.graph_objects as go
-from skimage import measure
 
 # Hide warnings
 warnings.filterwarnings('ignore')
@@ -15,7 +14,7 @@ st.sidebar.title("Project Settings")
 
 # Load model by default
 try:
-    model = YOLO("best.pt")  # Update with your model path
+    model = YOLO("best.pt")
     st.sidebar.success("Model loaded successfully!")
 except Exception as e:
     st.sidebar.error(f"Failed to load model: {e}")
@@ -31,10 +30,10 @@ if uploaded_file is not None:
     # Perform detection automatically
     with st.spinner("Detecting objects..."):
         img_array = np.array(image)
-        results = model(img_array, retina_masks=True)  # retina_masks=True daha detaylı maskeler için
+        results = model(img_array)
         
         # Get detection results
-        masks = results[0].masks
+        boxes = results[0].boxes
         img = results[0].orig_img
 
         # Create Plotly figure
@@ -54,35 +53,33 @@ if uploaded_file is not None:
             '#800080'   # Mor
         ]
 
-        # Add detected areas with masks
-        if masks is not None:
-            for i, mask in enumerate(masks):
-                # Maske verilerini numpy dizisine dönüştür
-                mask_array = mask.data.cpu().numpy()[0]
-                
-                # Maskenin konturlarını bul
-                contours = measure.find_contours(mask_array, 0.5)
-                
-                # Her kontur için
-                for contour in contours:
-                    # Kontur noktalarını Plotly formatına dönüştür
-                    x_coords = contour[:, 1]
-                    y_coords = contour[:, 0]
-                    
-                    # Renk seç
-                    color = colors[i % len(colors)]
-                    
-                    # Kontur çizgisini ekle
-                    fig.add_trace(go.Scatter(
-                        x=x_coords,
-                        y=y_coords,
-                        fill="toself",
-                        fillcolor=color,
-                        line=dict(color=color),
-                        opacity=0.5,
-                        showlegend=False,
-                        hoverinfo='skip'
-                    ))
+        # Add detected areas with smooth shapes
+        for i, box in enumerate(boxes):
+            x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+            
+            # Merkez ve yarıçap hesapla
+            cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+            rx, ry = (x2 - x1) / 2, (y2 - y1) / 2
+
+            # Elips için noktalar oluştur
+            t = np.linspace(0, 2*np.pi, 100)
+            x = cx + rx * np.cos(t)
+            y = cy + ry * np.sin(t)
+            
+            # Renk seç
+            color = colors[i % len(colors)]
+            
+            # Yumuşak kenarlı elips ekle
+            fig.add_trace(go.Scatter(
+                x=x,
+                y=y,
+                fill="toself",
+                fillcolor=color,
+                line=dict(color=color),
+                opacity=0.5,
+                showlegend=False,
+                hoverinfo='skip'
+            ))
 
         # Update layout
         fig.update_layout(

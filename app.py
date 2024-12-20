@@ -70,8 +70,8 @@ if uploaded_file is not None:
             # Define SVG path for an ellipse
             path = (
                 f"M {cx - rx},{cy} "
-                f"A {rx},{ry} 0 1,0 {cx + rx},{cy} "
-                f"A {rx},{ry} 0 1,0 {cx - rx},{cy}"
+                f"A {rx},{ry} 0 1,1 {cx + rx},{cy} "
+                f"A {rx},{ry} 0 1,1 {cx - rx},{cy}"
             )
             
             # Add shape with curved edges
@@ -83,7 +83,7 @@ if uploaded_file is not None:
                     width=3,
                 ),
                 fillcolor=color,
-                opacity=0.5
+                opacity=0.3
             )
             
             # Add hover annotation
@@ -91,7 +91,7 @@ if uploaded_file is not None:
                 x=[cx],
                 y=[cy],
                 mode="markers",
-                marker=dict(size=1, color=color),
+                marker=dict(size=5, color=color),
                 hoverinfo="text",
                 text=f"{label}<br>Confidence: {conf:.2f}",
                 showlegend=False

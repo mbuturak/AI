@@ -168,6 +168,10 @@ if uploaded_file is not None:
             # Add detected areas with smooth shapes
             if len(results) > 0 and results[0].boxes is not None:
                 boxes = results[0].boxes
+                
+                # Tüm trace'leri saklamak için liste
+                traces = []
+                
                 for i, box in enumerate(boxes):
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     conf = float(box.conf)
@@ -187,11 +191,10 @@ if uploaded_file is not None:
                     color = colors[i % len(colors)]
                     
                     # Rengin parlaklığını kontrol et ve yazı rengini belirle
-                    # Sarı ve açık renkler için siyah, koyu renkler için beyaz yazı
                     text_color = 'black' if color in ['#FFFF00', '#00FFFF'] else 'white'
                     
                     # Yumuşak kenarlı elips ekle
-                    fig.add_trace(go.Scatter(
+                    trace = go.Scatter(
                         x=x,
                         y=y,
                         fill="toself",
@@ -199,6 +202,7 @@ if uploaded_file is not None:
                         line=dict(color=color),
                         opacity=0.5,
                         name=label,
+                        customdata=[cls],  # Sınıf bilgisini sakla
                         showlegend=False,
                         hoverinfo='text',
                         hovertext=f"{label}<br>Güven: {conf:.2%}",
@@ -206,9 +210,14 @@ if uploaded_file is not None:
                             bgcolor=color,
                             font=dict(color=text_color)
                         )
-                    ))
+                    )
+                    traces.append(trace)
+                
+                # Tüm trace'leri figüre ekle
+                for trace in traces:
+                    fig.add_trace(trace)
 
-            # Update layout
+            # Update layout with click events
             fig.update_layout(
                 showlegend=False,
                 margin=dict(l=0, r=0, t=0, b=0),
@@ -219,14 +228,48 @@ if uploaded_file is not None:
                 width=800,
                 height=600,
                 hoverlabel=dict(
-                    namelength=-1  # Tüm ismi göster
+                    namelength=-1
                 ),
-                hovermode='closest'
+                hovermode='closest',
+                # Tıklama olaylarını etkinleştir
+                clickmode='event'
             )
 
-            # Display the plot
-            st.plotly_chart(fig, use_container_width=True)
+            # Tıklama olayını işle
+            selected_class = st.session_state.get('selected_class', None)
             
+            if selected_class is not None:
+                # Seçili sınıfa göre opaklıkları güncelle
+                for trace in traces:
+                    cls = trace.customdata[0]
+                    if cls != selected_class:
+                        trace.opacity = 0.1
+                    else:
+                        trace.opacity = 0.7
+
+            # Plotly eventi için callback
+            def handle_click(trace, points, state):
+                if len(points.point_inds) > 0:
+                    clicked_class = trace.customdata[points.point_inds[0]]
+                    if st.session_state.get('selected_class') == clicked_class:
+                        st.session_state.selected_class = None
+                    else:
+                        st.session_state.selected_class = clicked_class
+                    st.experimental_rerun()
+
+            # Display the plot with callback
+            st.plotly_chart(fig, use_container_width=True, custom_events=['click'])
+            
+            if 'selected_class' not in st.session_state:
+                st.session_state.selected_class = None
+
+            # Tıklama olayını dinle
+            clicked = st.experimental_get_query_params().get('plotly_click')
+            if clicked:
+                trace_index = int(clicked[0].split(':')[0])
+                point_index = int(clicked[0].split(':')[1])
+                handle_click(traces[trace_index], point_index)
+
             # Analiz bölümü
             st.markdown("---")
             

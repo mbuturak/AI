@@ -5,6 +5,8 @@ from PIL import Image
 import os
 from pathlib import Path
 import warnings
+import plotly.express as px
+import pandas as pd
 
 # Uyarıları gizle
 warnings.filterwarnings('ignore')
@@ -36,6 +38,54 @@ if uploaded_file is not None:
         img_array = np.array(image)
         results = model(img_array)
         
-        # Sadece etiketlenmiş sonucu göster
-        annotated_image = results[0].plot()
-        st.image(annotated_image, caption="Algılama Sonuçları", use_column_width=True)
+        # Sonuçları göster
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Etiketlenmiş görsel
+            annotated_image = results[0].plot()
+            st.image(annotated_image, caption="Algılama Sonuçları", use_container_width=True)
+        
+        with col2:
+            # İstatistikler
+            boxes = results[0].boxes
+            if len(boxes) > 0:
+                # Tespit edilen nesnelerin sayısı
+                st.subheader("Tespit İstatistikleri")
+                
+                # Sınıf sayılarını hesapla
+                classes = boxes.cls.cpu().numpy()
+                names = results[0].names
+                class_counts = {names[int(c)]: np.sum(classes == c) for c in np.unique(classes)}
+                
+                # Güven skorları
+                confidences = boxes.conf.cpu().numpy()
+                
+                # Sınıf dağılımı pasta grafiği
+                fig_pie = px.pie(
+                    values=list(class_counts.values()),
+                    names=list(class_counts.keys()),
+                    title="Tespit Edilen Nesnelerin Dağılımı"
+                )
+                st.plotly_chart(fig_pie, use_container_width=True)
+                
+                # Güven skorları histogramı
+                fig_hist = px.histogram(
+                    confidences,
+                    title="Güven Skorları Dağılımı",
+                    labels={'value': 'Güven Skoru', 'count': 'Sayı'}
+                )
+                st.plotly_chart(fig_hist, use_container_width=True)
+                
+                # Özet istatistikler
+                st.subheader("Özet Bilgiler")
+                st.write(f"🎯 Toplam tespit edilen nesne sayısı: {len(boxes)}")
+                st.write(f"📊 Ortalama güven skoru: {confidences.mean():.2f}")
+                st.write(f"🏆 En yüksek güven skoru: {confidences.max():.2f}")
+                
+                # Detaylı sınıf bilgileri
+                st.subheader("Sınıf Detayları")
+                for cls_name, count in class_counts.items():
+                    st.write(f"📌 {cls_name}: {count} adet")
+            else:
+                st.warning("Görüntüde hiçbir nesne tespit edilemedi.")

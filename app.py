@@ -2,8 +2,6 @@ import streamlit as st
 from ultralytics import YOLO
 import numpy as np
 from PIL import Image
-import os
-from pathlib import Path
 import warnings
 import plotly.graph_objects as go
 
@@ -15,14 +13,11 @@ st.title("Object Detection")
 st.sidebar.title("Project Settings")
 
 # Load model by default
-current_dir = Path(__file__).parent
-model_path = str(current_dir / "weights" / "best.pt")
-
 try:
-    model = YOLO(model_path)
+    model = YOLO("best.pt")  # Update with your model path
     st.sidebar.success("Model loaded successfully!")
 except Exception as e:
-    # st.sidebar.error(f"Failed to load model: {e}")
+    st.sidebar.error(f"Failed to load model: {e}")
     st.stop()
 
 # Image upload
@@ -47,32 +42,37 @@ if uploaded_file is not None:
         # Add image
         fig.add_trace(go.Image(z=img))
 
-        # Renk paleti tanımlama
+        # Define color palette
         colors = [
-            '#FF0000',  # Kırmızı
-            '#FFA500',  # Turuncu
-            '#FFFF00',  # Sarı
-            '#00FF00',  # Yeşil
+            '#FF0000',  # Red
+            '#FFA500',  # Orange
+            '#FFFF00',  # Yellow
+            '#00FF00',  # Green
             '#00FFFF',  # Cyan
-            '#0000FF',  # Mavi
-            '#800080'   # Mor
+            '#0000FF',  # Blue
+            '#800080'   # Purple
         ]
 
-        # Add boxes with hover information
+        # Add detected areas with curved edges
         for i, box in enumerate(boxes):
             x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
             conf = float(box.conf)
             cls = int(box.cls)
             label = results[0].names[cls]
             
-            # Renk seçimi
+            # Select color
             color = colors[i % len(colors)]
             
-            # Köşe noktaları için kontrol noktaları hesaplama
-            cp_x = (x2 - x1) * 0.2  # kontrol noktası offset'i
-            cp_y = (y2 - y1) * 0.2
-                # Bezier eğrisi için path
-            path = f"M {x1},{y1} Q {(x1+x2)/2},{y1} {x2},{y1} Q {x2},{(y1+y2)/2} {x2},{y2} Q {(x1+x2)/2},{y2} {x1},{y2} Q {x1},{(y1+y2)/2} {x1},{y1}"
+            # Create a smooth oval-like path for the box
+            cx, cy = (x1 + x2) / 2, (y1 + y2) / 2  # Center point
+            rx, ry = (x2 - x1) / 2, (y2 - y1) / 2  # Radii for x and y
+
+            # Define SVG path for an ellipse
+            path = (
+                f"M {cx - rx},{cy} "
+                f"A {rx},{ry} 0 1,0 {cx + rx},{cy} "
+                f"A {rx},{ry} 0 1,0 {cx - rx},{cy}"
+            )
             
             # Add shape with curved edges
             fig.add_shape(
@@ -88,8 +88,8 @@ if uploaded_file is not None:
             
             # Add hover annotation
             fig.add_trace(go.Scatter(
-                x=[(x1 + x2)/2],
-                y=[(y1 + y2)/2],
+                x=[cx],
+                y=[cy],
                 mode="markers",
                 marker=dict(size=1, color=color),
                 hoverinfo="text",

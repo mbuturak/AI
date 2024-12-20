@@ -69,7 +69,25 @@ TEXTS = {
         - Identifying areas of structural complexity
         - Understanding bone distribution patterns
         - Highlighting regions that may need closer examination
-        """
+        """,
+        'size_title': "Size Analysis",
+        'size_text': """
+        **Size Analysis Interpretation:**
+        
+        The box plot compares the sizes of detected regions in the X-Ray image:
+        
+        - The plot shows the distribution of region sizes for different anatomical structures
+        - The box points represent individual regions
+        - The median line indicates the median size
+        - The whiskers extend to the 10th and 90th percentiles
+        
+        This analysis helps in:
+        - Understanding the size distribution of different anatomical structures
+        - Identifying regions that may need closer examination
+        """,
+        'confidence_title': "Confidence Score Analysis",
+        'symmetry_title': "Symmetry Analysis",
+        'distance_title': "Distance Analysis"
     },
     'Türkçe': {
         'title': "Nesne Tespiti",
@@ -128,7 +146,25 @@ TEXTS = {
         - Yapısal karmaşıklığın yüksek olduğu bölgeleri belirleme
         - Kemik dağılım modellerini anlama
         - Daha yakından inceleme gerektirebilecek bölgeleri vurgulama
-        """
+        """,
+        'size_title': "Boyut Analizi",
+        'size_text': """
+        **Boyut Analizi Yorumu:**
+        
+        Kutu grafiği, X-Ray görüntüsündeki tespit edilen bölgelerin boyutlarını karşılaştırmak için kullanılır:
+        
+        - Grafik, farklı anatomik yapılar için bölge boyutlarının dağılımını gösterir
+        - Kutu noktaları, bölgeleri temsil eder
+        - Orta çizgi, medyan boyutu gösterir
+        - İğne uzunluğu, 10. ve 90. yüzdelikleri gösterir
+        
+        Bu analiz şu konularda yardımcı olur:
+        - Farklı anatomik yapıların boyut dağılımını anlama
+        - Daha yakından inceleme gerektirebilecek bölgeleri belirleme
+        """,
+        'confidence_title': "Güven Skoru Analizi",
+        'symmetry_title': "Simetri Analizi",
+        'distance_title': "Mesafe Analizi"
     }
 }
 
@@ -277,7 +313,7 @@ if uploaded_file is not None:
             
             with col_img1:
                 st.markdown("**Original X-Ray**" if selected_language == "English" else "**Orijinal X-Ray**")
-                # Orijinal görüntüyü Plotly ile göster
+                # Orijinal görüntüy�� Plotly ile göster
                 orig_fig = go.Figure()
                 orig_fig.add_trace(go.Image(z=img_array))
                 orig_fig.update_layout(
@@ -387,6 +423,137 @@ if uploaded_file is not None:
             st.plotly_chart(density_fig, use_container_width=True)          
 
             st.markdown(texts['density_text'])
+
+            # Boyut analizi bölümü
+            st.markdown("---")
+            st.subheader("Boyut Analizi" if selected_language == "Türkçe" else "Size Analysis")
+
+            # Bölgelerin boyutlarını hesapla
+            sizes = []
+            size_labels = []
+            for box in boxes:
+                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                width = x2 - x1
+                height = y2 - y1
+                area = width * height
+                sizes.append(area)
+                size_labels.append(results[0].names[int(box.cls)])
+
+            # Kutu grafiği oluştur
+            box_fig = go.Figure()
+            for label in set(size_labels):
+                label_sizes = [size for size, l in zip(sizes, size_labels) if l == label]
+                box_fig.add_trace(go.Box(
+                    y=label_sizes,
+                    name=label,
+                    boxpoints='all',
+                    jitter=0.3,
+                    pointpos=-1.8
+                ))
+
+            box_fig.update_layout(
+                title="Bölge Boyutları Karşılaştırması" if selected_language == "Türkçe" else "Region Size Comparison",
+                yaxis_title="Alan" if selected_language == "Türkçe" else "Area",
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='white'),
+                height=400
+            )
+            st.plotly_chart(box_fig, use_container_width=True)
+
+            # Güven skoru analizi
+            st.markdown("---")
+            st.subheader("Güven Skoru Analizi" if selected_language == "Türkçe" else "Confidence Score Analysis")
+
+            conf_data = []
+            conf_labels = []
+            for box in boxes:
+                conf_data.append(float(box.conf))
+                conf_labels.append(results[0].names[int(box.cls)])
+
+            conf_fig = go.Figure()
+            for label in set(conf_labels):
+                label_confs = [conf for conf, l in zip(conf_data, conf_labels) if l == label]
+                conf_fig.add_trace(go.Violin(
+                    y=label_confs,
+                    name=label,
+                    box_visible=True,
+                    meanline_visible=True
+                ))
+
+            conf_fig.update_layout(
+                title="Güven Skorları Dağılımı" if selected_language == "Türkçe" else "Confidence Score Distribution",
+                yaxis_title="Güven Skoru" if selected_language == "Türkçe" else "Confidence Score",
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='white'),
+                height=400
+            )
+            st.plotly_chart(conf_fig, use_container_width=True)
+
+            # Simetri analizi
+            st.markdown("---")
+            st.subheader("Simetri Analizi" if selected_language == "Türkçe" else "Symmetry Analysis")
+
+            # Görüntüyü dikey olarak ikiye böl
+            image_center = img_array.shape[1] // 2
+            left_detections = 0
+            right_detections = 0
+
+            for box in boxes:
+                x1, x2 = box.xyxy[0].cpu().numpy()[[0, 2]]
+                center = (x1 + x2) / 2
+                if center < image_center:
+                    left_detections += 1
+                else:
+                    right_detections += 1
+
+            # Simetri grafiği
+            symmetry_fig = go.Figure(data=[
+                go.Bar(
+                    x=['Sol', 'Sağ'] if selected_language == "Türkçe" else ['Left', 'Right'],
+                    y=[left_detections, right_detections],
+                    marker_color=['#1f77b4', '#ff7f0e']
+                )
+            ])
+            symmetry_fig.update_layout(
+                title="Sol-Sağ Dağılımı" if selected_language == "Türkçe" else "Left-Right Distribution",
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='white'),
+                height=400
+            )
+            st.plotly_chart(symmetry_fig, use_container_width=True)
+
+            # Mesafe analizi
+            st.markdown("---")
+            st.subheader("Mesafe Analizi" if selected_language == "Türkçe" else "Distance Analysis")
+
+            distances = []
+            pair_labels = []
+            for i, box1 in enumerate(boxes):
+                for j, box2 in enumerate(boxes[i+1:], i+1):
+                    x1, y1 = (box1.xyxy[0][0] + box1.xyxy[0][2])/2, (box1.xyxy[0][1] + box1.xyxy[0][3])/2
+                    x2, y2 = (box2.xyxy[0][0] + box2.xyxy[0][2])/2, (box2.xyxy[0][1] + box2.xyxy[0][3])/2
+                    distance = np.sqrt((x2-x1)**2 + (y2-y1)**2)
+                    distances.append(distance)
+                    pair_labels.append(f"{results[0].names[int(box1.cls)]} - {results[0].names[int(box2.cls)]}")
+
+            dist_fig = go.Figure(data=go.Histogram(
+                x=distances,
+                nbinsx=30,
+                opacity=0.7
+            ))
+            dist_fig.update_layout(
+                title="Bölgeler Arası Mesafe Dağılımı" if selected_language == "Türkçe" else "Inter-Region Distance Distribution",
+                xaxis_title="Mesafe" if selected_language == "Türkçe" else "Distance",
+                yaxis_title="Frekans" if selected_language == "Türkçe" else "Frequency",
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='white'),
+                height=400
+            )
+            st.plotly_chart(dist_fig, use_container_width=True)
 
     except Exception as e:
         error_msg = "An error occurred" if selected_language == "English" else "Hata oluştu"

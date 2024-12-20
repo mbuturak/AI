@@ -71,8 +71,7 @@ if uploaded_file is not None:
             # Köşe noktaları için kontrol noktaları hesaplama
             cp_x = (x2 - x1) * 0.2  # kontrol noktası offset'i
             cp_y = (y2 - y1) * 0.2
-
-            # Bezier eğrisi için path
+                # Bezier eğrisi için path
             path = f"M {x1},{y1} Q {(x1+x2)/2},{y1} {x2},{y1} Q {x2},{(y1+y2)/2} {x2},{y2} Q {(x1+x2)/2},{y2} {x1},{y2} Q {x1},{(y1+y2)/2} {x1},{y1}"
             
             # Add shape with curved edges

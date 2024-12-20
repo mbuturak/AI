@@ -47,30 +47,47 @@ if uploaded_file is not None:
         # Add image
         fig.add_trace(go.Image(z=img))
 
+        # Renk paleti tanımlama
+        colors = [
+            '#FF0000',  # Kırmızı
+            '#FFA500',  # Turuncu
+            '#FFFF00',  # Sarı
+            '#00FF00',  # Yeşil
+            '#00FFFF',  # Cyan
+            '#0000FF',  # Mavi
+            '#800080'   # Mor
+        ]
+
         # Add boxes with hover information
-        for box in boxes:
-            x1, y1, x2, y2 = box.xyxy[0]
+        for i, box in enumerate(boxes):
+            x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
             conf = float(box.conf)
             cls = int(box.cls)
             label = results[0].names[cls]
             
-            # Add shape
+            # Renk seçimi
+            color = colors[i % len(colors)]
+            
+            # Add shape with rounded corners
             fig.add_shape(
-                type="rect",
-                x0=x1, y0=y1, x1=x2, y1=y2,
-                line=dict(color="red", width=2),
-                fillcolor="rgba(255,0,0,0.2)",
-                hoverinfo="text",
+                type="path",
+                path=f"M {x1},{y1} L {x2},{y1} L {x2},{y2} L {x1},{y2} Z",
+                line=dict(
+                    color=color,
+                    width=3,
+                ),
+                fillcolor="rgba(0,0,0,0)",
+                opacity=0.7
             )
             
             # Add hover annotation
             fig.add_trace(go.Scatter(
-                x=[x1],
-                y=[y1],
+                x=[(x1 + x2)/2],
+                y=[(y1 + y2)/2],
                 mode="markers",
-                marker=dict(size=1, color="red"),
+                marker=dict(size=1, color=color),
                 hoverinfo="text",
-                text=f"Class: {label}<br>Confidence: {conf:.2f}",
+                text=f"{label}<br>Confidence: {conf:.2f}",
                 showlegend=False
             ))
 
@@ -80,6 +97,10 @@ if uploaded_file is not None:
             margin=dict(l=0, r=0, t=0, b=0),
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            plot_bgcolor='black',
+            paper_bgcolor='black',
+            width=800,
+            height=600
         )
 
         # Display the plot

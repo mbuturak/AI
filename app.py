@@ -12,7 +12,7 @@ import pandas as pd
 warnings.filterwarnings('ignore')
 
 # Title
-st.title("Object Detection with YOLOv8")
+st.title("Object Detection")
 st.sidebar.title("Project Settings")
 
 # Load model

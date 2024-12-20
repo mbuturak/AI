@@ -45,6 +45,30 @@ TEXTS = {
         **Note:** This analysis is based on AI-powered detection and should be used as 
         a supportive tool alongside professional medical evaluation. The distributions 
         provide additional context but should not be used as the sole basis for medical decisions.
+        """,
+        'density_title': "Regional Density Analysis",
+        'density_text': """
+        **Regional Density Analysis Interpretation:**
+        
+        The heat map overlaid on the X-Ray image shows the concentration of detected bone regions:
+        
+        - **High Density Areas (Red/Yellow)**: 
+          - Indicates regions with multiple bone structures in close proximity
+          - Common in joints and complex anatomical structures
+          - May suggest areas requiring detailed examination
+        
+        - **Medium Density Areas (Green/Blue)**:
+          - Shows moderate concentration of bone structures
+          - Typically represents normal anatomical spacing
+        
+        - **Low Density Areas (Dark Blue)**:
+          - Indicates areas with fewer detected structures
+          - May represent spaces between major bone groups
+        
+        This analysis helps in:
+        - Identifying areas of structural complexity
+        - Understanding bone distribution patterns
+        - Highlighting regions that may need closer examination
         """
     },
     'Türkçe': {
@@ -80,6 +104,30 @@ TEXTS = {
         **Not:** Bu analiz yapay zeka destekli tespit üzerine kuruludur ve profesyonel 
         tıbbi değerlendirme ile birlikte destekleyici bir araç olarak kullanılmalıdır. 
         Dağılımlar ek bağlam sağlar, ancak tek başına tıbbi kararlar için kullanılmamalıdır.
+        """,
+        'density_title': "Bölgesel Yoğunluk Analizi",
+        'density_text': """
+        **Bölgesel Yoğunluk Analizi Yorumu:**
+        
+        X-Ray görüntüsü üzerine bindirilen ısı haritası, tespit edilen kemik bölgelerinin yoğunluğunu gösterir:
+        
+        - **Yüksek Yoğunluklu Bölgeler (Kırmızı/Sarı)**:
+          - Yakın konumda birden fazla kemik yapısının bulunduğunu gösterir
+          - Genellikle eklemler ve karmaşık anatomik yapılarda görülür
+          - Detaylı inceleme gerektirebilecek alanları işaret edebilir
+        
+        - **Orta Yoğunluklu Bölgeler (Yeşil/Mavi)**:
+          - Kemik yapılarının orta düzeyde yoğunlaştığı bölgeleri gösterir
+          - Tipik olarak normal anatomik aralıkları temsil eder
+        
+        - **Düşük Yoğunluklu Bölgeler (Koyu Mavi)**:
+          - Daha az yapının tespit edildiği alanları gösterir
+          - Genellikle ana kemik grupları arasındaki boşlukları temsil eder
+        
+        Bu analiz şu konularda yardımcı olur:
+        - Yapısal karmaşıklığın yüksek olduğu bölgeleri belirleme
+        - Kemik dağılım modellerini anlama
+        - Daha yakından inceleme gerektirebilecek bölgeleri vurgulama
         """
     }
 }
@@ -337,6 +385,44 @@ if uploaded_file is not None:
                 height=400
             )
             st.plotly_chart(density_fig, use_container_width=True)
+
+            # Yoğunluk analizi bölümünü güncelleyin
+            st.markdown("---")
+            col_density1, col_density2 = st.columns([2, 1])
+
+            with col_density1:
+                st.subheader(texts['density_title'])
+                
+                # Yoğunluk haritası oluştur
+                density_fig = go.Figure(data=go.Histogram2dContour(
+                    x=centers_x,
+                    y=centers_y,
+                    colorscale='Viridis',
+                    nbinsx=20,
+                    nbinsy=20,
+                    showscale=True,
+                    colorbar=dict(
+                        title=dict(
+                            text="Yoğunluk" if selected_language == "Türkçe" else "Density",
+                            side="right"
+                        )
+                    )
+                ))
+                density_fig.add_trace(go.Image(z=img_array, opacity=0.5))
+                density_fig.update_layout(
+                    title=dict(
+                        text="Tespit Yoğunluğu" if selected_language == "Türkçe" else "Detection Density",
+                        font=dict(color='white')
+                    ),
+                    paper_bgcolor='black',
+                    plot_bgcolor='black',
+                    height=400,
+                    margin=dict(l=20, r=20, t=50, b=20)
+                )
+                st.plotly_chart(density_fig, use_container_width=True)
+
+            with col_density2:
+                st.markdown(texts['density_text'])
 
     except Exception as e:
         error_msg = "An error occurred" if selected_language == "English" else "Hata oluştu"

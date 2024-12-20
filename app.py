@@ -25,9 +25,16 @@ TEXTS = {
         'analysis_title': "Analysis Explanation",
         'distribution_text': """
         **Distribution Analysis:**
-        The bar chart shows the frequency of detected regions in the X-Ray image. 
-        Each bar represents the number of occurrences for each detected anatomical structure, 
-        providing insights into the distribution of different bone structures in the image.
+        The visualizations show the distribution of detected regions in the X-Ray image:
+        
+        - **Bar Chart**: Shows the count of each detected region type, providing a clear 
+        comparison of frequencies across different anatomical structures.
+        
+        - **Pie Chart**: Displays the percentage distribution of detected regions, helping 
+        to understand the relative proportion of each anatomical structure in the image.
+        
+        This analysis helps in quickly identifying the prevalence and distribution patterns 
+        of different bone structures in the X-Ray image.
         """,
         'metrics_text': """
         **Performance Metrics:**
@@ -38,9 +45,8 @@ TEXTS = {
         """,
         'note_text': """
         **Note:** This analysis is based on AI-powered detection and should be used as 
-        a supportive tool alongside professional medical evaluation. The confidence scores 
-        and distributions provide additional context but should not be used as the sole 
-        basis for medical decisions.
+        a supportive tool alongside professional medical evaluation. The distributions 
+        provide additional context but should not be used as the sole basis for medical decisions.
         """
     },
     'Türkçe': {
@@ -56,9 +62,16 @@ TEXTS = {
         'analysis_title': "Analiz Açıklaması",
         'distribution_text': """
         **Dağılım Analizi:**
-        Grafik, X-Ray görüntüsünde tespit edilen bölgelerin sıklığını göstermektedir. 
-        Her çubuk, tespit edilen anatomik yapıların sayısını temsil eder ve 
-        farklı kemik yapılarının görüntüdeki dağılımı hakkında bilgi verir.
+        Grafikler, X-Ray görüntüsünde tespit edilen bölgelerin dağılımını göstermektedir:
+        
+        - **Çubuk Grafik**: Her tespit edilen bölge tipinin sayısını gösterir ve farklı 
+        anatomik yapıların sıklığını karşılaştırmayı sağlar.
+        
+        - **Pasta Grafik**: Tespit edilen bölgelerin yüzdesel dağılımını gösterir ve 
+        her anatomik yapının görüntüdeki göreceli oranını anlamamıza yardımcı olur.
+        
+        Bu analiz, X-Ray görüntüsündeki farklı kemik yapılarının yaygınlığını ve dağılım 
+        modellerini hızlıca belirlemeye yardımcı olur.
         """,
         'metrics_text': """
         **Performans Metrikleri:**
@@ -70,8 +83,7 @@ TEXTS = {
         'note_text': """
         **Not:** Bu analiz yapay zeka destekli tespit üzerine kuruludur ve profesyonel 
         tıbbi değerlendirme ile birlikte destekleyici bir araç olarak kullanılmalıdır. 
-        Güven skorları ve dağılımlar ek bağlam sağlar, ancak tek başına tıbbi kararlar 
-        için kullanılmamalıdır.
+        Dağılımlar ek bağlam sağlar, ancak tek başına tıbbi kararlar için kullanılmamalıdır.
         """
     }
 }
@@ -234,12 +246,14 @@ if uploaded_file is not None:
                     label = results[0].names[cls]
                     class_counts[label] = class_counts.get(label, 0) + 1
                 
-                # Dağılım grafiği
+                # Bar grafiği
                 dist_fig = go.Figure(data=[
                     go.Bar(
                         x=list(class_counts.keys()),
                         y=list(class_counts.values()),
-                        marker_color='#1f77b4'
+                        marker_color='#1f77b4',
+                        text=list(class_counts.values()),
+                        textposition='auto'
                     )
                 ])
                 dist_fig.update_layout(
@@ -248,22 +262,39 @@ if uploaded_file is not None:
                     plot_bgcolor='rgba(0,0,0,0)',
                     font=dict(color='white'),
                     xaxis=dict(showgrid=False),
-                    yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.1)')
+                    yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.1)'),
+                    title=dict(
+                        text="Bölge Sayıları" if selected_language == "Türkçe" else "Region Counts",
+                        font=dict(color='white')
+                    )
                 )
                 st.plotly_chart(dist_fig, use_container_width=True)
-                
-                st.subheader(texts['metrics_title'])
-                
-                col_metrics1, col_metrics2 = st.columns(2)
-                with col_metrics1:
-                    st.metric(texts['avg_confidence'], f"{avg_conf:.1%}")
-                with col_metrics2:
-                    st.metric(texts['total_detections'], len(boxes))
+
+                # Pasta grafik
+                pie_fig = go.Figure(data=[
+                    go.Pie(
+                        labels=list(class_counts.keys()),
+                        values=list(class_counts.values()),
+                        hole=.3,
+                        textinfo='percent',
+                        marker=dict(colors=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b'])
+                    )
+                ])
+                pie_fig.update_layout(
+                    margin=dict(l=20, r=20, t=30, b=20),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='white'),
+                    title=dict(
+                        text="Bölge Dağılımı (%)" if selected_language == "Türkçe" else "Region Distribution (%)",
+                        font=dict(color='white')
+                    )
+                )
+                st.plotly_chart(pie_fig, use_container_width=True)
             
             with col2:
                 st.subheader(texts['analysis_title'])
                 st.markdown(texts['distribution_text'])
-                st.markdown(texts['metrics_text'])
                 st.markdown(texts['note_text'])
 
     except Exception as e:

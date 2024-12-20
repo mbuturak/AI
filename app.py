@@ -74,20 +74,64 @@ TEXTS = {
         'size_text': """
         **Size Analysis Interpretation:**
         
-        The box plot compares the sizes of detected regions in the X-Ray image:
+        The box plot shows the size distribution of detected regions:
         
-        - The plot shows the distribution of region sizes for different anatomical structures
-        - The box points represent individual regions
-        - The median line indicates the median size
-        - The whiskers extend to the 10th and 90th percentiles
+        - Each box represents a different anatomical structure
+        - The box shows the quartiles (25th to 75th percentile)
+        - The line inside the box is the median size
+        - Individual points show specific detections
         
-        This analysis helps in:
-        - Understanding the size distribution of different anatomical structures
-        - Identifying regions that may need closer examination
+        This helps in:
+        - Comparing sizes across different bone structures
+        - Identifying unusually large or small detections
+        - Understanding the typical size range for each structure
         """,
         'confidence_title': "Confidence Score Analysis",
+        'confidence_text': """
+        **Confidence Score Analysis:**
+        
+        The violin plot shows the distribution of model's confidence scores:
+        
+        - Wider sections indicate more common confidence values
+        - The box inside shows quartiles and median
+        - Higher scores (closer to 1.0) indicate stronger confidence
+        - Lower scores suggest less certain detections
+        
+        This helps in:
+        - Assessing the reliability of detections
+        - Identifying patterns in model certainty
+        - Understanding detection quality for different structures
+        """,
         'symmetry_title': "Symmetry Analysis",
-        'distance_title': "Distance Analysis"
+        'symmetry_text': """
+        **Symmetry Analysis:**
+        
+        The bar chart compares left-right distribution of detections:
+        
+        - Shows the number of detections on each side
+        - Helps identify potential asymmetries
+        - Useful for bilateral comparison
+        
+        Important for:
+        - Checking structural balance
+        - Identifying potential anomalies
+        - Supporting comparative analysis
+        """,
+        'distance_title': "Distance Analysis",
+        'distance_text': """
+        **Distance Analysis:**
+        
+        The histogram shows the distribution of distances between detected regions:
+        
+        - X-axis shows the distance between pairs of regions
+        - Y-axis shows how frequently each distance occurs
+        - Peaks indicate common spacing patterns
+        
+        This analysis helps in:
+        - Understanding spatial relationships
+        - Identifying typical spacing patterns
+        - Detecting unusual positioning
+        """
     },
     'Türkçe': {
         'title': "Nesne Tespiti",
@@ -151,20 +195,64 @@ TEXTS = {
         'size_text': """
         **Boyut Analizi Yorumu:**
         
-        Kutu grafiği, X-Ray görüntüsündeki tespit edilen bölgelerin boyutlarını karşılaştırmak için kullanılır:
+        Kutu grafiği, tespit edilen bölgelerin boyut dağılımını gösterir:
         
-        - Grafik, farklı anatomik yapılar için bölge boyutlarının dağılımını gösterir
-        - Kutu noktaları, bölgeleri temsil eder
-        - Orta çizgi, medyan boyutu gösterir
-        - İğne uzunluğu, 10. ve 90. yüzdelikleri gösterir
+        - Her kutu farklı bir anatomik yapıyı temsil eder
+        - Kutu, çeyrekler arası aralığı gösterir (25. ile 75. yüzdelik)
+        - Kutunun içindeki çizgi medyan boyutu gösterir
+        - Tekil noktalar spesifik tespitleri gösterir
         
-        Bu analiz şu konularda yardımcı olur:
-        - Farklı anatomik yapıların boyut dağılımını anlama
-        - Daha yakından inceleme gerektirebilecek bölgeleri belirleme
+        Bu analiz şunlarda yardımcı olur:
+        - Farklı kemik yapılarının boyutlarını karşılaştırma
+        - Olağandışı büyük veya küçük tespitleri belirleme
+        - Her yapı için tipik boyut aralığını anlama
         """,
         'confidence_title': "Güven Skoru Analizi",
+        'confidence_text': """
+        **Güven Skoru Analizi:**
+        
+        Keman grafiği, modelin güven skorlarının dağılımını gösterir:
+        
+        - Geniş bölümler daha yaygın güven değerlerini gösterir
+        - İçteki kutu çeyrekler ve medyanı gösterir
+        - Yüksek skorlar (1.0'a yakın) güçlü güveni gösterir
+        - Düşük skorlar daha az kesin tespitleri gösterir
+        
+        Bu analiz şunlarda yardımcı olur:
+        - Tespitlerin güvenilirliğini değerlendirme
+        - Model kesinliğindeki örüntüleri belirleme
+        - Farklı yapılar için tespit kalitesini anlama
+        """,
         'symmetry_title': "Simetri Analizi",
-        'distance_title': "Mesafe Analizi"
+        'symmetry_text': """
+        **Simetri Analizi:**
+        
+        Çubuk grafik, tespitlerin sol-sağ dağılımını karşılaştırır:
+        
+        - Her taraftaki tespit sayısını gösterir
+        - Olası asimetrileri belirlemeye yardımcı olur
+        - İki taraflı karşılaştırma için kullanışlıdır
+        
+        Şunlar için önemlidir:
+        - Yapısal dengeyi kontrol etme
+        - Potansiyel anomalileri belirleme
+        - Karşılaştırmalı analizi destekleme
+        """,
+        'distance_title': "Mesafe Analizi",
+        'distance_text': """
+        **Mesafe Analizi:**
+        
+        Histogram, tespit edilen bölgeler arasındaki mesafelerin dağılımını gösterir:
+        
+        - X ekseni bölge çiftleri arasındaki mesafeyi gösterir
+        - Y ekseni her mesafenin ne sıklıkta görüldüğünü gösterir
+        - Tepeler yaygın aralık örüntülerini gösterir
+        
+        Bu analiz şunlarda yardımcı olur:
+        - Uzamsal ilişkileri anlama
+        - Tipik aralık örüntülerini belirleme
+        - Olağandışı konumlandırmaları tespit etme
+        """
     }
 }
 
@@ -313,7 +401,7 @@ if uploaded_file is not None:
             
             with col_img1:
                 st.markdown("**Original X-Ray**" if selected_language == "English" else "**Orijinal X-Ray**")
-                # Orijinal görüntüy�� Plotly ile göster
+                # Orijinal görüntüy Plotly ile göster
                 orig_fig = go.Figure()
                 orig_fig.add_trace(go.Image(z=img_array))
                 orig_fig.update_layout(
@@ -460,6 +548,7 @@ if uploaded_file is not None:
                 height=400
             )
             st.plotly_chart(box_fig, use_container_width=True)
+            st.markdown(texts['size_text'])
 
             # Güven skoru analizi
             st.markdown("---")
@@ -490,6 +579,7 @@ if uploaded_file is not None:
                 height=400
             )
             st.plotly_chart(conf_fig, use_container_width=True)
+            st.markdown(texts['confidence_text'])
 
             # Simetri analizi
             st.markdown("---")
@@ -524,6 +614,7 @@ if uploaded_file is not None:
                 height=400
             )
             st.plotly_chart(symmetry_fig, use_container_width=True)
+            st.markdown(texts['symmetry_text'])
 
             # Mesafe analizi
             st.markdown("---")
@@ -554,6 +645,7 @@ if uploaded_file is not None:
                 height=400
             )
             st.plotly_chart(dist_fig, use_container_width=True)
+            st.markdown(texts['distance_text'])
 
     except Exception as e:
         error_msg = "An error occurred" if selected_language == "English" else "Hata oluştu"

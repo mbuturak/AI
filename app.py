@@ -44,13 +44,13 @@ if uploaded_file is not None:
 
         # Define color palette
         colors = [
-            '#FF0000',  # Red
-            '#FFA500',  # Orange
-            '#FFFF00',  # Yellow
-            '#00FF00',  # Green
-            '#00FFFF',  # Cyan
-            '#0000FF',  # Blue
-            '#800080'   # Purple
+            'rgba(255, 0, 0, 0.5)',  # Red
+            'rgba(255, 165, 0, 0.5)',  # Orange
+            'rgba(255, 255, 0, 0.5)',  # Yellow
+            'rgba(0, 255, 0, 0.5)',  # Green
+            'rgba(0, 255, 255, 0.5)',  # Cyan
+            'rgba(0, 0, 255, 0.5)',  # Blue
+            'rgba(128, 0, 128, 0.5)'   # Purple
         ]
 
         # Add detected areas with curved edges
@@ -82,8 +82,8 @@ if uploaded_file is not None:
                     color=color,
                     width=3,
                 ),
-                fillcolor="rgba(0,0,0,0)",
-                opacity=0.7
+                fillcolor=color,
+                opacity=0.5
             )
             
             # Add hover annotation

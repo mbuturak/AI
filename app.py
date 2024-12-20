@@ -73,13 +73,7 @@ if uploaded_file is not None:
             cp_y = (y2 - y1) * 0.2
 
             # Bezier eğrisi için path
-            path = (
-                f"M {x1},{y1} " +  # Başlangıç noktası
-                f"C {x1+cp_x},{y1} {x2-cp_x},{y1} {x2},{y1} " +  # Üst kenar
-                f"C {x2},{y1+cp_y} {x2},{y2-cp_y} {x2},{y2} " +  # Sağ kenar
-                f"C {x2-cp_x},{y2} {x1+cp_x},{y2} {x1},{y2} " +  # Alt kenar
-                f"C {x1},{y2-cp_y} {x1},{y1+cp_y} {x1},{y1}"     # Sol kenar
-            )
+            path = f"M {x1},{y1} Q {(x1+x2)/2},{y1} {x2},{y1} Q {x2},{(y1+y2)/2} {x2},{y2} Q {(x1+x2)/2},{y2} {x1},{y2} Q {x1},{(y1+y2)/2} {x1},{y1}"
             
             # Add shape with curved edges
             fig.add_shape(

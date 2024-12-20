@@ -8,102 +8,105 @@ import warnings
 import plotly.express as px
 import pandas as pd
 
-# Uyarıları gizle
+# Hide warnings
 warnings.filterwarnings('ignore')
 
-# Başlık
-st.title("Görsel Segmentasyon")
-st.sidebar.title("Proje Ayarları")
+# Title
+st.title("Object Detection with YOLOv8")
+st.sidebar.title("Project Settings")
 
-# Modeli varsayılan olarak yükleme
-current_dir = Path(__file__).parent
-model_path = str(current_dir / "weights" / "best.pt")
-
+# Load model
 try:
-    model = YOLO(model_path)
-    st.sidebar.success("Model başarıyla yüklendi!")
+    model = YOLO('yolov8n.pt')
+    st.sidebar.success("Model loaded successfully!")
 except Exception as e:
-    st.sidebar.error(f"Model yüklenemedi: {e}")
+    st.sidebar.error(f"Failed to load model: {e}")
     st.stop()
 
-# Görsel yükleme
-uploaded_file = st.file_uploader("Bir Görsel Yükleyin", type=["jpg", "jpeg", "png"])
+# Image upload
+uploaded_file = st.file_uploader("Upload an Image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # Görseli yükle
+    # Load image
     image = Image.open(uploaded_file)
     
-    # Otomatik olarak algılama yap
-    with st.spinner("Algılama yapılıyor..."):
+    # Perform detection automatically
+    with st.spinner("Detecting objects..."):
         img_array = np.array(image)
         results = model(img_array)
         
-        # Sonuçları göster
+        # Show results
         col1, col2 = st.columns(2)
         
         with col1:
-            # Etiketlenmiş görsel
-            annotated_image = results[0].plot()
-            st.image(annotated_image, caption="Algılama Sonuçları", use_container_width=True)
+            # Annotated image
+            annotated_image = results[0].plot(
+                boxes=False,  # Hide boxes
+                labels=True,  # Show labels
+                conf=True,    # Show confidence scores
+                line_width=2, # Line width
+                font_size=16  # Font size
+            )
+            st.image(annotated_image, caption="Detection Results", use_container_width=True)
             
-            # Güven skoru hakkında bilgilendirme
+            # Confidence score information
             st.info("""
-            ### 📝 Güven Skoru Nedir?
-            Güven skoru (Confidence Score), modelin bir nesneyi tespit ederken ne kadar "emin" olduğunu 0 ile 1 arasında gösteren değerdir.
+            ### 📝 What is Confidence Score?
+            Confidence score indicates how certain the model is about its detection, ranging from 0 to 1.
             
-            #### 🎯 Güven Skoru Aralıkları:
-            - **0.90 - 1.00:** Mükemmel tespit - Model çok emin
-            - **0.70 - 0.89:** İyi tespit - Model oldukça emin
-            - **0.50 - 0.69:** Orta tespit - Model kısmen emin
-            - **0.00 - 0.49:** Zayıf tespit - Model emin değil
+            #### 🎯 Confidence Score Ranges:
+            - **0.90 - 1.00:** Excellent detection - Model is very confident
+            - **0.70 - 0.89:** Good detection - Model is quite confident
+            - **0.50 - 0.69:** Fair detection - Model is somewhat confident
+            - **0.00 - 0.49:** Poor detection - Model is not confident
             
-            #### 📊 Düşük Güven Skorunun Nedenleri:
-            - Bulanık veya karanlık görüntü
-            - Nesnenin kısmi görünürlüğü
-            - Kötü ışık koşulları
-            - Nesnenin uzak olması
+            #### 📊 Common Reasons for Low Confidence:
+            - Blurry or dark image
+            - Partial visibility of object
+            - Poor lighting conditions
+            - Object is too far away
             """)
         
         with col2:
-            # İstatistikler
-            boxes = results[0].boxes
-            if len(boxes) > 0:
-                # Tespit edilen nesnelerin sayısı
-                st.subheader("Tespit İstatistikleri")
+            # Statistics
+            if len(results[0].boxes) > 0:
+                # Number of detected objects
+                st.subheader("Detection Statistics")
                 
-                # Sınıf sayılarını hesapla
+                # Calculate class counts
+                boxes = results[0].boxes
                 classes = boxes.cls.cpu().numpy()
                 names = results[0].names
                 class_counts = {names[int(c)]: np.sum(classes == c) for c in np.unique(classes)}
                 
-                # Güven skorları
+                # Confidence scores
                 confidences = boxes.conf.cpu().numpy()
                 
-                # Sınıf dağılımı pasta grafiği
+                # Class distribution pie chart
                 fig_pie = px.pie(
                     values=list(class_counts.values()),
                     names=list(class_counts.keys()),
-                    title="Tespit Edilen Nesnelerin Dağılımı"
+                    title="Distribution of Detected Objects"
                 )
                 st.plotly_chart(fig_pie, use_container_width=True)
                 
-                # Güven skorları histogramı
+                # Confidence scores histogram
                 fig_hist = px.histogram(
                     confidences,
-                    title="Güven Skorları Dağılımı",
-                    labels={'value': 'Güven Skoru', 'count': 'Sayı'}
+                    title="Distribution of Confidence Scores",
+                    labels={'value': 'Confidence Score', 'count': 'Count'}
                 )
                 st.plotly_chart(fig_hist, use_container_width=True)
                 
-                # Özet istatistikler
-                st.subheader("Özet Bilgiler")
-                st.write(f"🎯 Toplam tespit edilen nesne sayısı: {len(boxes)}")
-                st.write(f"📊 Ortalama güven skoru: {confidences.mean():.2f}")
-                st.write(f"🏆 En yüksek güven skoru: {confidences.max():.2f}")
+                # Summary statistics
+                st.subheader("Summary")
+                st.write(f"🎯 Total objects detected: {len(boxes)}")
+                st.write(f"📊 Average confidence score: {confidences.mean():.2f}")
+                st.write(f"🏆 Highest confidence score: {confidences.max():.2f}")
                 
-                # Detaylı sınıf bilgileri
-                st.subheader("Sınıf Detayları")
+                # Detailed class information
+                st.subheader("Class Details")
                 for cls_name, count in class_counts.items():
-                    st.write(f"📌 {cls_name}: {count} adet")
+                    st.write(f"📌 {cls_name}: {count} objects")
             else:
-                st.warning("Görüntüde hiçbir nesne tespit edilemedi.")
+                st.warning("No objects detected in the image.")

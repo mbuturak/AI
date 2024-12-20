@@ -101,6 +101,10 @@ if uploaded_file is not None:
                     # Renk seç
                     color = colors[i % len(colors)]
                     
+                    # Rengin parlaklığını kontrol et ve yazı rengini belirle
+                    # Sarı ve açık renkler için siyah, koyu renkler için beyaz yazı
+                    text_color = 'black' if color in ['#FFFF00', '#00FFFF'] else 'white'
+                    
                     # Yumuşak kenarlı elips ekle
                     fig.add_trace(go.Scatter(
                         x=x,
@@ -109,13 +113,13 @@ if uploaded_file is not None:
                         fillcolor=color,
                         line=dict(color=color),
                         opacity=0.5,
-                        name=label,  # Trace adını label olarak ayarla
+                        name=label,
                         showlegend=False,
                         hoverinfo='text',
                         hovertext=f"{label}<br>Güven: {conf:.2%}",
                         hoverlabel=dict(
                             bgcolor=color,
-                            font=dict(color='white')
+                            font=dict(color=text_color)
                         )
                     ))
 

@@ -172,11 +172,18 @@ if uploaded_file is not None:
                 # Tüm trace'leri saklamak için liste
                 traces = []
                 
+                # Tıklanan sınıfı kontrol et
+                selected_class = st.session_state.get('selected_class', None)
+                
                 for i, box in enumerate(boxes):
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     conf = float(box.conf)
                     cls = int(box.cls)
                     label = results[0].names[cls]
+                    
+                    # Eğer bir sınıf seçiliyse ve bu bölge o sınıftan değilse, görünmez yap
+                    if selected_class is not None and cls != selected_class:
+                        continue
                     
                     # Merkez ve yarıçap hesapla
                     cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
@@ -189,8 +196,6 @@ if uploaded_file is not None:
                     
                     # Renk seç
                     color = colors[i % len(colors)]
-                    
-                    # Rengin parlaklığını kontrol et ve yazı rengini belirle
                     text_color = 'black' if color in ['#FFFF00', '#00FFFF'] else 'white'
                     
                     # Yumuşak kenarlı elips ekle
@@ -217,6 +222,42 @@ if uploaded_file is not None:
                 for trace in traces:
                     fig.add_trace(trace)
 
+                # Tıklama olayını işle
+                def handle_click(trace, points, state):
+                    if points and len(points.point_inds) > 0:
+                        clicked_class = trace.customdata[0]
+                        # Eğer zaten seçili olan sınıfa tıklandıysa, filtreyi kaldır
+                        if st.session_state.get('selected_class') == clicked_class:
+                            st.session_state.selected_class = None
+                        else:
+                            st.session_state.selected_class = clicked_class
+                        st.rerun()
+
+                # Plotly konfigürasyonu
+                config = {
+                    'displayModeBar': False,
+                    'scrollZoom': False
+                }
+                
+                # Görüntüyü göster
+                st.plotly_chart(fig, use_container_width=True, config=config)
+                
+                # Tıklama olayını dinle
+                if 'plotly_click' in st.query_params:
+                    clicked_data = st.query_params['plotly_click']
+                    if clicked_data:
+                        try:
+                            trace_index, point_index = map(int, clicked_data.split(':'))
+                            if 0 <= trace_index < len(traces):
+                                handle_click(traces[trace_index], {'point_inds': [point_index]}, None)
+                        except (ValueError, IndexError):
+                            pass
+
+                # Filtre durumunu göster
+                if selected_class is not None:
+                    filter_text = f"{'Filtrelenen Bölge' if selected_language == 'Türkçe' else 'Filtered Region'}: {results[0].names[selected_class]}"
+                    st.info(filter_text)
+
             # Update layout with click events
             fig.update_layout(
                 showlegend=False,
@@ -234,49 +275,6 @@ if uploaded_file is not None:
                 # Tıklama olaylarını etkinleştir
                 clickmode='event'
             )
-
-            # Tıklama olayını işle
-            selected_class = st.session_state.get('selected_class', None)
-            
-            if selected_class is not None:
-                # Seçili sınıfa göre opaklıkları güncelle
-                for trace in traces:
-                    cls = trace.customdata[0]
-                    if cls != selected_class:
-                        trace.opacity = 0.1
-                    else:
-                        trace.opacity = 0.7
-
-            # Plotly eventi için callback
-            def handle_click(trace, points, state):
-                if points and len(points.point_inds) > 0:
-                    clicked_class = trace.customdata[points.point_inds[0]]
-                    if st.session_state.get('selected_class') == clicked_class:
-                        st.session_state.selected_class = None
-                    else:
-                        st.session_state.selected_class = clicked_class
-                    st.rerun()
-
-            # Display the plot with callback
-            config = {
-                'displayModeBar': False,
-                'scrollZoom': False
-            }
-            st.plotly_chart(fig, use_container_width=True, config=config)
-            
-            if 'selected_class' not in st.session_state:
-                st.session_state.selected_class = None
-
-            # Tıklama olayını dinle
-            if 'plotly_click' in st.query_params:
-                clicked_data = st.query_params['plotly_click']
-                if clicked_data:
-                    try:
-                        trace_index, point_index = map(int, clicked_data.split(':'))
-                        if 0 <= trace_index < len(traces):
-                            handle_click(traces[trace_index], {'point_inds': [point_index]}, None)
-                    except (ValueError, IndexError):
-                        pass
 
             # Analiz bölümü
             st.markdown("---")

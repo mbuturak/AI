@@ -36,14 +36,15 @@ if uploaded_file is not None:
     # Otomatik olarak algılama yap
     with st.spinner("Algılama yapılıyor..."):
         img_array = np.array(image)
-        results = model(img_array)
+        # Segmentasyon modunda çalıştır
+        results = model(img_array, conf=0.25, mode='segment')
         
         # Sonuçları göster
         col1, col2 = st.columns(2)
         
         with col1:
-            # Etiketlenmiş görsel
-            annotated_image = results[0].plot()
+            # Etiketlenmiş görsel - maskeleri göster
+            annotated_image = results[0].plot(boxes=False, masks=True)  # boxes=False ile kutuları kaldır, masks=True ile maskeleri göster
             st.image(annotated_image, caption="Algılama Sonuçları", use_container_width=True)
             
             # Güven skoru hakkında bilgilendirme

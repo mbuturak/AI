@@ -38,4 +38,4 @@ if uploaded_file is not None:
         
         # Show only the annotated result
         annotated_image = results[0].plot()
-        st.image(annotated_image, caption="Detection Results", use_column_width=True)
+        st.image(annotated_image, caption="Detection Results", use_container_width=True)

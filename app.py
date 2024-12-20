@@ -15,9 +15,12 @@ warnings.filterwarnings('ignore')
 st.title("YOLOv8 ile Nesne Algılama")
 st.sidebar.title("Proje Ayarları")
 
-# Segmentasyon modeli yükle
+# Modeli varsayılan olarak yükleme
+current_dir = Path(__file__).parent
+model_path = str(current_dir / "weights" / "best.pt")
+
 try:
-    model = YOLO('yolov8n-seg.pt')  # Hazır segmentasyon modeli
+    model = YOLO(model_path)
     st.sidebar.success("Model başarıyla yüklendi!")
 except Exception as e:
     st.sidebar.error(f"Model yüklenemedi: {e}")
@@ -33,17 +36,15 @@ if uploaded_file is not None:
     # Otomatik olarak algılama yap
     with st.spinner("Algılama yapılıyor..."):
         img_array = np.array(image)
-        # Segmentasyon modunda çalıştır
-        results = model.predict(img_array, conf=0.25, save=False)
+        results = model(img_array)
         
         # Sonuçları göster
         col1, col2 = st.columns(2)
         
         with col1:
-            # Etiketlenmiş görsel - maskeleri göster
-            for r in results:
-                im_array = r.plot(boxes=True, masks=True)  # Hem kutuları hem maskeleri göster
-            st.image(im_array, caption="Algılama Sonuçları", use_container_width=True)
+            # Etiketlenmiş görsel
+            annotated_image = results[0].plot()
+            st.image(annotated_image, caption="Algılama Sonuçları", use_container_width=True)
             
             # Güven skoru hakkında bilgilendirme
             st.info("""
@@ -65,12 +66,12 @@ if uploaded_file is not None:
         
         with col2:
             # İstatistikler
-            if len(results[0].boxes) > 0:
+            boxes = results[0].boxes
+            if len(boxes) > 0:
                 # Tespit edilen nesnelerin sayısı
                 st.subheader("Tespit İstatistikleri")
                 
                 # Sınıf sayılarını hesapla
-                boxes = results[0].boxes
                 classes = boxes.cls.cpu().numpy()
                 names = results[0].names
                 class_counts = {names[int(c)]: np.sum(classes == c) for c in np.unique(classes)}

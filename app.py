@@ -473,54 +473,51 @@ if uploaded_file is not None:
 
             # Bölgesel yoğunluk analizi
             st.markdown("---")
-            col_density1, col_density2 = st.columns([2, 1])  # 2:1 oranında kolonlar
+            st.subheader("Bölgesel Yoğunluk Analizi" if selected_language == "Türkçe" else "Regional Density Analysis")
 
-            with col_density1:
-                st.subheader("Bölgesel Yoğunluk Analizi" if selected_language == "Türkçe" else "Regional Density Analysis")
+            # Tespit edilen bölgelerin merkez noktalarını topla
+            centers_x = []
+            centers_y = []
+            for box in boxes:
+                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                centers_x.append((x1 + x2) / 2)
+                centers_y.append((y1 + y2) / 2)
 
-                # Tespit edilen bölgelerin merkez noktalarını topla
-                centers_x = []
-                centers_y = []
-                for box in boxes:
-                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                    centers_x.append((x1 + x2) / 2)
-                    centers_y.append((y1 + y2) / 2)
-
-                # Yoğunluk haritası oluştur
-                density_fig = go.Figure(data=go.Histogram2dContour(
-                    x=centers_x,
-                    y=centers_y,
-                    colorscale='Viridis',
-                    nbinsx=20,
-                    nbinsy=20,
-                    showscale=True,
-                    colorbar=dict(
-                        title=dict(
-                            text="Yoğunluk" if selected_language == "Türkçe" else "Density",
-                            side="right"
-                        ),
-                        thickness=20,  # Renk çubuğunu daha kalın yap
-                        len=0.9,      # Renk çubuğu uzunluğu
-                    )
-                ))
-                density_fig.add_trace(go.Image(z=img_array, opacity=0.5))
-                density_fig.update_layout(
+            # Yoğunluk haritası oluştur
+            density_fig = go.Figure(data=go.Histogram2dContour(
+                x=centers_x,
+                y=centers_y,
+                colorscale='Viridis',
+                nbinsx=20,
+                nbinsy=20,
+                showscale=True,
+                colorbar=dict(
                     title=dict(
-                        text="Tespit Yoğunluğu" if selected_language == "Türkçe" else "Detection Density",
-                        font=dict(color='white', size=16),
-                        y=0.95
+                        text="Yoğunluk" if selected_language == "Türkçe" else "Density",
+                        side="right"
                     ),
-                    paper_bgcolor='black',
-                    plot_bgcolor='black',
-                    height=600,  # Yüksekliği artır
-                    margin=dict(l=20, r=50, t=50, b=20),  # Marjinleri ayarla
-                    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+                    thickness=20,
+                    len=0.9
                 )
-                st.plotly_chart(density_fig, use_container_width=True)
-
-            with col_density2:
-                st.markdown(texts['density_text'])
+            ))
+            density_fig.add_trace(go.Image(z=img_array, opacity=0.5))
+            density_fig.update_layout(
+                title=dict(
+                    text="Tespit Yoğunluğu" if selected_language == "Türkçe" else "Detection Density",
+                    font=dict(color='white', size=16),
+                    y=0.95
+                ),
+                paper_bgcolor='black',
+                plot_bgcolor='black',
+                height=700,  # Yüksekliği daha da artır
+                margin=dict(l=20, r=50, t=50, b=20),
+                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+            )
+            st.plotly_chart(density_fig, use_container_width=True)
+            
+            # Açıklamayı altına ekle
+            st.markdown(texts['density_text'])
 
             # Boyut analizi bölümü
             st.markdown("---")

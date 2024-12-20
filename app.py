@@ -499,9 +499,8 @@ if uploaded_file is not None:
                     thickness=20,
                     len=0.9
                 ),
-                hovertemplate=("Tespit Bölgesi<br>Yoğunluk: %{z}<extra></extra>" 
-                             if selected_language == "Türkçe" 
-                             else "Detection Region<br>Density: %{z}<extra></extra>")
+                hovertemplate=("Yoğunluk: %{z}<extra></extra>" if selected_language == "Türkçe" 
+                             else "Density: %{z}<extra></extra>")
             ))
             
             # X-ray görüntüsünü ekle
@@ -510,6 +509,22 @@ if uploaded_file is not None:
                 opacity=0.5,
                 hovertemplate="X-Ray<extra></extra>"
             ))
+
+            # Tespit edilen bölgeleri ekle
+            for box, label in zip(boxes, [results[0].names[int(box.cls)] for box in boxes]):
+                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                cx = (x1 + x2) / 2
+                cy = (y1 + y2) / 2
+                
+                density_fig.add_trace(go.Scatter(
+                    x=[cx],
+                    y=[cy],
+                    mode='markers',
+                    marker=dict(size=10, opacity=0),
+                    hoverinfo='text',
+                    hovertext=label,
+                    showlegend=False
+                ))
             
             density_fig.update_layout(
                 title=dict(
@@ -567,7 +582,7 @@ if uploaded_file is not None:
             st.plotly_chart(box_fig, use_container_width=True)
             st.markdown(texts['size_text'])
 
-            # G��ven skoru analizi
+            # Güven skoru analizi
             st.markdown("---")
             st.subheader("Güven Skoru Analizi" if selected_language == "Türkçe" else "Confidence Score Analysis")
 

@@ -14,7 +14,7 @@ st.sidebar.title("Project Settings")
 
 # Load model by default
 try:
-    model = YOLO("best.pt")
+    model = YOLO("weights/best.pt")
     st.sidebar.success("Model loaded successfully!")
 except Exception as e:
     st.sidebar.error(f"Failed to load model: {e}")

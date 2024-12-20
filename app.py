@@ -25,13 +25,11 @@ TEXTS = {
         'analysis_title': "Analysis Explanation",
         'distribution_text': """
         **Distribution Analysis:**
-        The visualizations show the distribution of detected regions in the X-Ray image:
+        The pie chart visualizes the distribution of detected regions in the X-Ray image:
         
-        - **Bar Chart**: Shows the count of each detected region type, providing a clear 
-        comparison of frequencies across different anatomical structures.
-        
-        - **Pie Chart**: Displays the percentage distribution of detected regions, helping 
-        to understand the relative proportion of each anatomical structure in the image.
+        - The chart shows both the count and percentage of each detected anatomical structure
+        - The donut-style visualization helps to understand the relative proportions
+        - Hover over segments to see detailed information
         
         This analysis helps in quickly identifying the prevalence and distribution patterns 
         of different bone structures in the X-Ray image.
@@ -57,18 +55,16 @@ TEXTS = {
         'loading': "Nesneler tespit ediliyor...",
         'distribution_title': "Tespit Edilen Bölgelerin Dağılımı",
         'metrics_title': "Model Performans Metrikleri",
-        'avg_confidence': "Ortalama Güven",
+        'avg_confidence': "Ortalama G��ven",
         'total_detections': "Toplam Tespit",
         'analysis_title': "Analiz Açıklaması",
         'distribution_text': """
         **Dağılım Analizi:**
-        Grafikler, X-Ray görüntüsünde tespit edilen bölgelerin dağılımını göstermektedir:
+        Pasta grafik, X-Ray görüntüsünde tespit edilen bölgelerin dağılımını göstermektedir:
         
-        - **Çubuk Grafik**: Her tespit edilen bölge tipinin sayısını gösterir ve farklı 
-        anatomik yapıların sıklığını karşılaştırmayı sağlar.
-        
-        - **Pasta Grafik**: Tespit edilen bölgelerin yüzdesel dağılımını gösterir ve 
-        her anatomik yapının görüntüdeki göreceli oranını anlamamıza yardımcı olur.
+        - Grafik, her anatomik yapının hem sayısını hem de yüzdesini gösterir
+        - Halka şeklindeki görselleştirme, oranları anlamayı kolaylaştırır
+        - Detaylı bilgi için dilimler üzerine gelin
         
         Bu analiz, X-Ray görüntüsündeki farklı kemik yapılarının yaygınlığını ve dağılım 
         modellerini hızlıca belirlemeye yardımcı olur.
@@ -231,6 +227,17 @@ if uploaded_file is not None:
             # Display the plot
             st.plotly_chart(fig, use_container_width=True)
             
+            # X-ray görüntülerini yan yana göster
+            col_img1, col_img2 = st.columns(2)
+            
+            with col_img1:
+                st.markdown("**Original X-Ray**" if selected_language == "English" else "**Orijinal X-Ray**")
+                st.image(img_array)
+            
+            with col_img2:
+                st.markdown("**Detected Regions**" if selected_language == "English" else "**Tespit Edilen Bölgeler**")
+                st.plotly_chart(fig, use_container_width=True)
+            
             # Analiz bölümü
             st.markdown("---")
             
@@ -245,30 +252,6 @@ if uploaded_file is not None:
                     cls = int(box.cls)
                     label = results[0].names[cls]
                     class_counts[label] = class_counts.get(label, 0) + 1
-                
-                # Bar grafiği
-                dist_fig = go.Figure(data=[
-                    go.Bar(
-                        x=list(class_counts.keys()),
-                        y=list(class_counts.values()),
-                        marker_color='#1f77b4',
-                        text=list(class_counts.values()),
-                        textposition='auto'
-                    )
-                ])
-                dist_fig.update_layout(
-                    margin=dict(l=20, r=20, t=30, b=20),
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='white'),
-                    xaxis=dict(showgrid=False),
-                    yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.1)'),
-                    title=dict(
-                        text="Bölge Sayıları" if selected_language == "Türkçe" else "Region Counts",
-                        font=dict(color='white')
-                    )
-                )
-                st.plotly_chart(dist_fig, use_container_width=True)
 
                 # Pasta grafik
                 pie_fig = go.Figure(data=[
@@ -276,18 +259,30 @@ if uploaded_file is not None:
                         labels=list(class_counts.keys()),
                         values=list(class_counts.values()),
                         hole=.3,
-                        textinfo='percent',
-                        marker=dict(colors=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b'])
+                        textinfo='value+percent',  # Hem sayı hem yüzde göster
+                        marker=dict(colors=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']),
+                        textfont=dict(size=14)  # Yazı boyutunu artır
                     )
                 ])
                 pie_fig.update_layout(
-                    margin=dict(l=20, r=20, t=30, b=20),
+                    margin=dict(l=20, r=20, t=50, b=20),
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='white'),
+                    font=dict(color='white', size=14),  # Genel yazı boyutunu artır
                     title=dict(
-                        text="Bölge Dağılımı (%)" if selected_language == "Türkçe" else "Region Distribution (%)",
-                        font=dict(color='white')
+                        text="Bölge Dağılımı" if selected_language == "Türkçe" else "Region Distribution",
+                        font=dict(color='white', size=16),
+                        y=0.95
+                    ),
+                    height=500,  # Grafiğin yüksekliğini artır
+                    showlegend=True,  # Göstergeyi göster
+                    legend=dict(
+                        font=dict(color='white', size=12),
+                        orientation="h",  # Yatay gösterge
+                        yanchor="bottom",
+                        y=-0.2,  # Göstergeyi grafiğin altına yerleştir
+                        xanchor="center",
+                        x=0.5
                     )
                 )
                 st.plotly_chart(pie_fig, use_container_width=True)

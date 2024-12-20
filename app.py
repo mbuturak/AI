@@ -269,13 +269,14 @@ if uploaded_file is not None:
                         labels=list(class_counts.keys()),
                         values=list(class_counts.values()),
                         hole=.3,
-                        textinfo='value+percent',
+                        textinfo='label+percent',  # Sayı yerine etiket ve yüzde göster
                         marker=dict(colors=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']),
                         textfont=dict(size=14),
-                        textposition='inside',  # Metni dilimin içine yerleştir
-                        insidetextorientation='radial',  # Metni radyal olarak yerleştir
-                        hoverinfo='label+value+percent',  # Hover bilgisini düzenle
-                        hoverlabel=dict(font=dict(size=14, color='white'))
+                        textposition='inside',
+                        insidetextorientation='radial',
+                        hoverinfo='label+value+percent',  # Hover'da etiket, sayı ve yüzde göster
+                        hoverlabel=dict(font=dict(size=14, color='white')),
+                        rotation=90  # Metinlerin okunabilirliğini artırmak için döndür
                     )
                 ])
                 pie_fig.update_layout(
@@ -289,7 +290,7 @@ if uploaded_file is not None:
                         y=0.95
                     ),
                     height=600,
-                    showlegend=False  # Göstergeyi kaldır
+                    showlegend=False
                 )
                 st.plotly_chart(pie_fig, use_container_width=True)
             

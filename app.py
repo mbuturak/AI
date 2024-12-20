@@ -216,7 +216,7 @@ if uploaded_file is not None:
                 yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                 plot_bgcolor='black',
                 paper_bgcolor='black',
-                width=800,
+                width=None,  # Otomatik genişlik için None
                 height=600,
                 hoverlabel=dict(
                     namelength=-1
@@ -229,7 +229,19 @@ if uploaded_file is not None:
             
             with col_img1:
                 st.markdown("**Original X-Ray**" if selected_language == "English" else "**Orijinal X-Ray**")
-                st.image(img_array, use_column_width=True)
+                # Orijinal görüntüyü Plotly ile göster
+                orig_fig = go.Figure()
+                orig_fig.add_trace(go.Image(z=img_array))
+                orig_fig.update_layout(
+                    margin=dict(l=0, r=0, t=0, b=0),
+                    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                    plot_bgcolor='black',
+                    paper_bgcolor='black',
+                    width=None,  # Otomatik genişlik için None
+                    height=600
+                )
+                st.plotly_chart(orig_fig, use_container_width=True)
             
             with col_img2:
                 st.markdown("**Detected Regions**" if selected_language == "English" else "**Tespit Edilen Bölgeler**")

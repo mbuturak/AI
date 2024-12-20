@@ -25,11 +25,13 @@ TEXTS = {
         'analysis_title': "Analysis Explanation",
         'distribution_text': """
         **Distribution Analysis:**
-        The pie chart visualizes the distribution of detected regions in the X-Ray image:
+        The visualizations show the distribution of detected regions in the X-Ray image:
         
-        - The chart shows both the count and percentage of each detected anatomical structure
-        - The donut-style visualization helps to understand the relative proportions
-        - Hover over segments to see detailed information
+        - **Bar Chart**: Shows the count of each detected region type, providing a clear 
+        comparison of frequencies across different anatomical structures.
+        
+        - **Pie Chart**: Displays the percentage distribution of detected regions, helping 
+        to understand the relative proportion of each anatomical structure in the image.
         
         This analysis helps in quickly identifying the prevalence and distribution patterns 
         of different bone structures in the X-Ray image.
@@ -60,11 +62,13 @@ TEXTS = {
         'analysis_title': "Analiz Açıklaması",
         'distribution_text': """
         **Dağılım Analizi:**
-        Pasta grafik, X-Ray görüntüsünde tespit edilen bölgelerin dağılımını göstermektedir:
+        Grafikler, X-Ray görüntüsünde tespit edilen bölgelerin dağılımını göstermektedir:
         
-        - Grafik, her anatomik yapının hem sayısını hem de yüzdesini gösterir
-        - Halka şeklindeki görselleştirme, oranları anlamayı kolaylaştırır
-        - Detaylı bilgi için dilimler üzerine gelin
+        - **Çubuk Grafik**: Her tespit edilen bölge tipinin sayısını gösterir ve farklı 
+        anatomik yapıların sıklığını karşılaştırmayı sağlar.
+        
+        - **Pasta Grafik**: Tespit edilen bölgelerin yüzdesel dağılımını gösterir ve 
+        her anatomik yapının görüntüdeki göreceli oranını anlamamıza yardımcı olur.
         
         Bu analiz, X-Ray görüntüsündeki farklı kemik yapılarının yaygınlığını ve dağılım 
         modellerini hızlıca belirlemeye yardımcı olur.
@@ -168,22 +172,11 @@ if uploaded_file is not None:
             # Add detected areas with smooth shapes
             if len(results) > 0 and results[0].boxes is not None:
                 boxes = results[0].boxes
-                
-                # Tüm trace'leri saklamak için liste
-                traces = []
-                
-                # Tıklanan sınıfı kontrol et
-                selected_class = st.session_state.get('selected_class', None)
-                
                 for i, box in enumerate(boxes):
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     conf = float(box.conf)
                     cls = int(box.cls)
                     label = results[0].names[cls]
-                    
-                    # Eğer bir sınıf seçiliyse ve bu bölge o sınıftan değilse, görünmez yap
-                    if selected_class is not None and cls != selected_class:
-                        continue
                     
                     # Merkez ve yarıçap hesapla
                     cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
@@ -196,10 +189,13 @@ if uploaded_file is not None:
                     
                     # Renk seç
                     color = colors[i % len(colors)]
+                    
+                    # Rengin parlaklığını kontrol et ve yazı rengini belirle
+                    # Sarı ve açık renkler için siyah, koyu renkler için beyaz yazı
                     text_color = 'black' if color in ['#FFFF00', '#00FFFF'] else 'white'
                     
                     # Yumuşak kenarlı elips ekle
-                    trace = go.Scatter(
+                    fig.add_trace(go.Scatter(
                         x=x,
                         y=y,
                         fill="toself",
@@ -207,7 +203,6 @@ if uploaded_file is not None:
                         line=dict(color=color),
                         opacity=0.5,
                         name=label,
-                        customdata=[cls],  # Sınıf bilgisini sakla
                         showlegend=False,
                         hoverinfo='text',
                         hovertext=f"{label}<br>Güven: {conf:.2%}",
@@ -215,50 +210,9 @@ if uploaded_file is not None:
                             bgcolor=color,
                             font=dict(color=text_color)
                         )
-                    )
-                    traces.append(trace)
-                
-                # Tüm trace'leri figüre ekle
-                for trace in traces:
-                    fig.add_trace(trace)
+                    ))
 
-                # Tıklama olayını işle
-                def handle_click(trace, points, state):
-                    if points and len(points.point_inds) > 0:
-                        clicked_class = trace.customdata[0]
-                        # Eğer zaten seçili olan sınıfa tıklandıysa, filtreyi kaldır
-                        if st.session_state.get('selected_class') == clicked_class:
-                            st.session_state.selected_class = None
-                        else:
-                            st.session_state.selected_class = clicked_class
-                        st.rerun()
-
-                # Plotly konfigürasyonu
-                config = {
-                    'displayModeBar': False,
-                    'scrollZoom': False
-                }
-                
-                # Görüntüyü göster
-                st.plotly_chart(fig, use_container_width=True, config=config)
-                
-                # Tıklama olayını dinle
-                if 'plotly_click' in st.query_params:
-                    clicked_data = st.query_params['plotly_click']
-                    if clicked_data:
-                        try:
-                            trace_index, point_index = map(int, clicked_data.split(':'))
-                            if 0 <= trace_index < len(traces):
-                                handle_click(traces[trace_index], {'point_inds': [point_index]}, None)
-                        except (ValueError, IndexError):
-                            pass
-
-                # Filtre durumunu göster
-                if selected_class is not None:
-                    filter_text = f"{'Filtrelenen Bölge' if selected_language == 'Türkçe' else 'Filtered Region'}: {results[0].names[selected_class]}"
-                    st.info(filter_text)
-
-            # Update layout with click events
+            # Update layout
             fig.update_layout(
                 showlegend=False,
                 margin=dict(l=0, r=0, t=0, b=0),
@@ -269,13 +223,14 @@ if uploaded_file is not None:
                 width=800,
                 height=600,
                 hoverlabel=dict(
-                    namelength=-1
+                    namelength=-1  # Tüm ismi göster
                 ),
-                hovermode='closest',
-                # Tıklama olaylarını etkinleştir
-                clickmode='event'
+                hovermode='closest'
             )
 
+            # Display the plot
+            st.plotly_chart(fig, use_container_width=True)
+            
             # Analiz bölümü
             st.markdown("---")
             
@@ -291,32 +246,49 @@ if uploaded_file is not None:
                     label = results[0].names[cls]
                     class_counts[label] = class_counts.get(label, 0) + 1
                 
+                # Bar grafiği
+                dist_fig = go.Figure(data=[
+                    go.Bar(
+                        x=list(class_counts.keys()),
+                        y=list(class_counts.values()),
+                        marker_color='#1f77b4',
+                        text=list(class_counts.values()),
+                        textposition='auto'
+                    )
+                ])
+                dist_fig.update_layout(
+                    margin=dict(l=20, r=20, t=30, b=20),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='white'),
+                    xaxis=dict(showgrid=False),
+                    yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.1)'),
+                    title=dict(
+                        text="Bölge Sayıları" if selected_language == "Türkçe" else "Region Counts",
+                        font=dict(color='white')
+                    )
+                )
+                st.plotly_chart(dist_fig, use_container_width=True)
+
                 # Pasta grafik
                 pie_fig = go.Figure(data=[
                     go.Pie(
                         labels=list(class_counts.keys()),
                         values=list(class_counts.values()),
                         hole=.3,
-                        textinfo='value+percent',  # Hem sayı hem yüzde göster
-                        textposition='auto',
-                        marker=dict(colors=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']),
-                        hovertemplate="<b>%{label}</b><br>" +
-                                    "Sayı: %{value}<br>" +
-                                    "Oran: %{percent}<br>" +
-                                    "<extra></extra>"  # Trace bilgisini kaldır
+                        textinfo='percent',
+                        marker=dict(colors=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b'])
                     )
                 ])
                 pie_fig.update_layout(
-                    margin=dict(l=20, r=20, t=50, b=20),  # Üst marjini arttırdık
+                    margin=dict(l=20, r=20, t=30, b=20),
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='white', size=14),  # Yazı boyutunu arttırdık
+                    font=dict(color='white'),
                     title=dict(
-                        text="Bölge Dağılımı" if selected_language == "Türkçe" else "Region Distribution",
-                        font=dict(color='white', size=16),
-                        y=0.95  # Başlığı biraz yukarı taşıdık
-                    ),
-                    height=500  # Grafiğin yüksekliğini arttırdık
+                        text="Bölge Dağılımı (%)" if selected_language == "Türkçe" else "Region Distribution (%)",
+                        font=dict(color='white')
+                    )
                 )
                 st.plotly_chart(pie_fig, use_container_width=True)
             

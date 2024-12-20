@@ -10,7 +10,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Başlık
-st.title("YOLOv8 ile Nesne Algılama")
+st.title("Nesne Algılama")
 st.sidebar.title("Proje Ayarları")
 
 # Modeli varsayılan olarak yükleme

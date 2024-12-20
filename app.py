@@ -45,6 +45,24 @@ if uploaded_file is not None:
             # Etiketlenmiş görsel
             annotated_image = results[0].plot()
             st.image(annotated_image, caption="Algılama Sonuçları", use_container_width=True)
+            
+            # Güven skoru hakkında bilgilendirme
+            st.info("""
+            ### 📝 Güven Skoru Nedir?
+            Güven skoru (Confidence Score), modelin bir nesneyi tespit ederken ne kadar "emin" olduğunu 0 ile 1 arasında gösteren değerdir.
+            
+            #### 🎯 Güven Skoru Aralıkları:
+            - **0.90 - 1.00:** Mükemmel tespit - Model çok emin
+            - **0.70 - 0.89:** İyi tespit - Model oldukça emin
+            - **0.50 - 0.69:** Orta tespit - Model kısmen emin
+            - **0.00 - 0.49:** Zayıf tespit - Model emin değil
+            
+            #### 📊 Düşük Güven Skorunun Nedenleri:
+            - Bulanık veya karanlık görüntü
+            - Nesnenin kısmi görünürlüğü
+            - Kötü ışık koşulları
+            - Nesnenin uzak olması
+            """)
         
         with col2:
             # İstatistikler

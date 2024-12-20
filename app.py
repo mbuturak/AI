@@ -499,9 +499,9 @@ if uploaded_file is not None:
                     thickness=20,
                     len=0.9
                 ),
-                hovertemplate="%{text}<br>Yoğunluk: %{z}<extra></extra>" if selected_language == "Türkçe" 
-                            else "%{text}<br>Density: %{z}<extra></extra>",
-                text=["Tespit Bölgesi" if selected_language == "Türkçe" else "Detection Region"] * len(centers_x)
+                hovertemplate=("Tespit Bölgesi<br>Yoğunluk: %{z}<extra></extra>" 
+                             if selected_language == "Türkçe" 
+                             else "Detection Region<br>Density: %{z}<extra></extra>")
             ))
             
             # X-ray görüntüsünü ekle
@@ -567,7 +567,7 @@ if uploaded_file is not None:
             st.plotly_chart(box_fig, use_container_width=True)
             st.markdown(texts['size_text'])
 
-            # Güven skoru analizi
+            # G��ven skoru analizi
             st.markdown("---")
             st.subheader("Güven Skoru Analizi" if selected_language == "Türkçe" else "Confidence Score Analysis")
 

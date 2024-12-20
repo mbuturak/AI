@@ -37,28 +37,23 @@ if uploaded_file is not None:
         # Perform detection automatically
         with st.spinner("Detecting objects..."):
             img_array = np.array(image)
-            results = model(img_array, conf=confidence_threshold)  # Added confidence threshold
-            
-            # Debug information
-            st.sidebar.write(f"Image shape: {img_array.shape}")
-            st.sidebar.write(f"Number of detections: {len(results[0].boxes)}")
+            results = model(img_array, conf=confidence_threshold)
             
             # Show results
             col1, col2 = st.columns(2)
             
             with col1:
-                # Annotated image
+                # Annotated image with labels
                 annotated_image = results[0].plot(
-                    boxes=False,      # Hide boxes
+                    boxes=True,       # Show boxes
                     labels=True,      # Show labels
                     conf=True,        # Show confidence scores
                     line_width=2,     # Line width
-                    font_size=16      # Font size
+                    font_size=16,     # Font size
+                    hide_labels=False, # Make sure labels are visible
+                    hide_conf=False    # Make sure confidence scores are visible
                 )
                 st.image(annotated_image, caption="Detection Results", use_container_width=True)
-                
-                # Original image for comparison
-                st.image(image, caption="Original Image", use_container_width=True)
                 
                 # Confidence score information
                 st.info("""

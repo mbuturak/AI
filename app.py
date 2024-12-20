@@ -49,9 +49,7 @@ if uploaded_file is not None:
                     labels=True,      # Show labels
                     conf=True,        # Show confidence scores
                     line_width=2,     # Line width
-                    font_size=16,     # Font size
-                    hide_labels=False, # Make sure labels are visible
-                    hide_conf=False    # Make sure confidence scores are visible
+                    font_size=16      # Font size
                 )
                 st.image(annotated_image, caption="Detection Results", use_container_width=True)
                 

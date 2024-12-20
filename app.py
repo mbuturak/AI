@@ -44,6 +44,9 @@ if uploaded_file is not None:
         with st.spinner("Detecting objects..."):
             results = model.predict(img_array, conf=0.25)
             
+            # Debug için sınıf isimlerini kontrol et
+            st.write("Model Sınıfları:", results[0].names)
+            
             # Create Plotly figure
             fig = go.Figure()
 
@@ -68,7 +71,14 @@ if uploaded_file is not None:
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     conf = float(box.conf)
                     cls = int(box.cls)
-                    label = results[0].names[cls]
+                    
+                    # Sınıf ismini al ve kontrol et
+                    try:
+                        label = results[0].names[cls]
+                        st.write(f"Tespit {i+1}: Sınıf {cls} -> {label}")
+                    except:
+                        label = f"Sınıf {cls}"
+                        st.write(f"Hata: Sınıf {cls} için isim bulunamadı")
                     
                     # Merkez ve yarıçap hesapla
                     cx, cy = (x1 + x2) / 2, (y1 + y2) / 2

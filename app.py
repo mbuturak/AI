@@ -6,36 +6,36 @@ import os
 from pathlib import Path
 import warnings
 
-# Uyarıları gizle
+# Hide warnings
 warnings.filterwarnings('ignore')
 
-# Başlık
-st.title("Nesne Algılama")
-st.sidebar.title("Proje Ayarları")
+# Title
+st.title("Object Detection")
+st.sidebar.title("Project Settings")
 
-# Modeli varsayılan olarak yükleme
+# Load model by default
 current_dir = Path(__file__).parent
 model_path = str(current_dir / "weights" / "best.pt")
 
 try:
     model = YOLO(model_path)
-    st.sidebar.success("Model başarıyla yüklendi!")
+    st.sidebar.success("Model loaded successfully!")
 except Exception as e:
-    # st.sidebar.error(f"Model yüklenemedi: {e}")
+    # st.sidebar.error(f"Failed to load model: {e}")
     st.stop()
 
-# Görsel yükleme
-uploaded_file = st.file_uploader("Bir Görsel Yükleyin", type=["jpg", "jpeg", "png"])
+# Image upload
+uploaded_file = st.file_uploader("Upload an Image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # Görseli yükle
+    # Load image
     image = Image.open(uploaded_file)
     
-    # Otomatik olarak algılama yap
-    with st.spinner("Algılama yapılıyor..."):
+    # Perform detection automatically
+    with st.spinner("Detecting objects..."):
         img_array = np.array(image)
         results = model(img_array)
         
-        # Sadece etiketlenmiş sonucu göster
+        # Show only the annotated result
         annotated_image = results[0].plot()
-        st.image(annotated_image, caption="Algılama Sonuçları", use_column_width=True)
+        st.image(annotated_image, caption="Detection Results", use_column_width=True)

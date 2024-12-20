@@ -499,15 +499,15 @@ if uploaded_file is not None:
                     thickness=20,
                     len=0.9
                 ),
-                name="Yoğunluk Haritası" if selected_language == "Türkçe" else "Density Map",
-                hovertemplate="Yoğunluk: %{z}<extra></extra>" if selected_language == "Türkçe" else "Density: %{z}<extra></extra>"
+                hovertemplate="%{text}<br>Yoğunluk: %{z}<extra></extra>" if selected_language == "Türkçe" 
+                            else "%{text}<br>Density: %{z}<extra></extra>",
+                text=["Tespit Bölgesi" if selected_language == "Türkçe" else "Detection Region"] * len(centers_x)
             ))
             
             # X-ray görüntüsünü ekle
             density_fig.add_trace(go.Image(
                 z=img_array, 
                 opacity=0.5,
-                name="X-Ray Görüntüsü" if selected_language == "Türkçe" else "X-Ray Image",
                 hovertemplate="X-Ray<extra></extra>"
             ))
             

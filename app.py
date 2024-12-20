@@ -68,10 +68,23 @@ if uploaded_file is not None:
             # Renk seçimi
             color = colors[i % len(colors)]
             
-            # Add shape with rounded corners
+            # Köşe noktaları için kontrol noktaları hesaplama
+            cp_x = (x2 - x1) * 0.2  # kontrol noktası offset'i
+            cp_y = (y2 - y1) * 0.2
+
+            # Bezier eğrisi için path
+            path = (
+                f"M {x1},{y1} " +  # Başlangıç noktası
+                f"C {x1+cp_x},{y1} {x2-cp_x},{y1} {x2},{y1} " +  # Üst kenar
+                f"C {x2},{y1+cp_y} {x2},{y2-cp_y} {x2},{y2} " +  # Sağ kenar
+                f"C {x2-cp_x},{y2} {x1+cp_x},{y2} {x1},{y2} " +  # Alt kenar
+                f"C {x1},{y2-cp_y} {x1},{y1+cp_y} {x1},{y1}"     # Sol kenar
+            )
+            
+            # Add shape with curved edges
             fig.add_shape(
                 type="path",
-                path=f"M {x1},{y1} L {x2},{y1} L {x2},{y2} L {x1},{y2} Z",
+                path=path,
                 line=dict(
                     color=color,
                     width=3,

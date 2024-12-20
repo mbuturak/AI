@@ -8,7 +8,6 @@ import warnings
 
 # Uyarıları gizle
 warnings.filterwarnings('ignore')
-st.set_option('deprecation.showfileUploaderEncoding', False)
 
 # Başlık
 st.title("YOLOv8 ile Nesne Algılama")

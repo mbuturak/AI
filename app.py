@@ -278,14 +278,15 @@ def load_model(model_path):
         return None
     
     try:
-        # YOLOv11 için model yükleme
-        model = YOLO(model_path, task='detect', version='11.0')
+        # YOLO modeli yükleme
+        model = YOLO(model_path)  # 'version' parametresi kaldırıldı
         file_size = os.path.getsize(model_path) / (1024 * 1024)  # MB cinsinden
-        st.sidebar.success(f"YOLOv11 modeli başarıyla yüklendi! (Boyut: {file_size:.2f} MB)")
+        st.sidebar.success(f"YOLO modeli başarıyla yüklendi! (Boyut: {file_size:.2f} MB)")
         return model
     except Exception as e:
         st.sidebar.error(f"Model yüklenirken hata oluştu: {str(e)}")
         return None
+
 
 # Model yükleme
 MODEL_PATH = "weights/best.pt"

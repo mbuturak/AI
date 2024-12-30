@@ -509,7 +509,8 @@ if uploaded_file is not None:
                 class_counts = {}
                 for box in boxes:
                     cls = int(box.cls)
-                    label = results[0].names[cls]
+                    # Sadece bölge ismini al (true/false kısmını kaldır)
+                    label = results[0].names[cls].split('_')[0].upper()
                     class_counts[label] = class_counts.get(label, 0) + 1
 
                 # Pasta grafik
@@ -518,8 +519,8 @@ if uploaded_file is not None:
                         labels=list(class_counts.keys()),
                         values=list(class_counts.values()),
                         hole=.3,
-                        textinfo='label+value+percent',  # Etiket, sayı ve yüzde göster
-                        texttemplate='%{label}<br>%{value} adet<br>(%{percent})',  # Metin formatı
+                        textinfo='label+value+percent',
+                        texttemplate='%{label}<br>%{value} adet<br>(%{percent})',
                         marker=dict(colors=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']),
                         textfont=dict(size=14),
                         textposition='inside',
@@ -634,7 +635,8 @@ if uploaded_file is not None:
                 height = y2 - y1
                 area = width * height
                 sizes.append(area)
-                size_labels.append(results[0].names[int(box.cls)])
+                # Sadece bölge ismini al
+                size_labels.append(results[0].names[int(box.cls)].split('_')[0].upper())
 
             # Kutu grafiği oluştur
             box_fig = go.Figure()
@@ -667,7 +669,8 @@ if uploaded_file is not None:
             conf_labels = []
             for box in boxes:
                 conf_data.append(float(box.conf))
-                conf_labels.append(results[0].names[int(box.cls)])
+                # Sadece bölge ismini al
+                conf_labels.append(results[0].names[int(box.cls)].split('_')[0].upper())
 
             conf_fig = go.Figure()
             for label in set(conf_labels):
@@ -737,7 +740,10 @@ if uploaded_file is not None:
                     x2, y2 = (box2.xyxy[0][0] + box2.xyxy[0][2])/2, (box2.xyxy[0][1] + box2.xyxy[0][3])/2
                     distance = np.sqrt((x2-x1)**2 + (y2-y1)**2)
                     distances.append(distance)
-                    pair_labels.append(f"{results[0].names[int(box1.cls)]} - {results[0].names[int(box2.cls)]}")
+                    # Sadece bölge isimlerini al
+                    label1 = results[0].names[int(box1.cls)].split('_')[0].upper()
+                    label2 = results[0].names[int(box2.cls)].split('_')[0].upper()
+                    pair_labels.append(f"{label1} - {label2}")
 
             dist_fig = go.Figure(data=go.Histogram(
                 x=distances,

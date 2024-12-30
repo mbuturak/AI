@@ -374,10 +374,10 @@ if uploaded_file is not None:
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     conf = float(box.conf)
                     cls = int(box.cls)
-                    full_label = results[0].names[cls]
+                    full_label = "test"
                     # Sadece bölge ismini al (true/false kısmını kaldır)
-                    #base_label = full_label.split('_')[0].upper()
-                    base_label = "test"
+                    base_label = full_label.split('_')[0].upper()
+                    
                     is_true = "true" in full_label.lower()
                     
                     # Merkez noktaları

@@ -348,106 +348,71 @@ if uploaded_file is not None:
                     cls = int(box.cls)
                     label = results[0].names[cls]
                     
-                    # Merkez noktaları
-                    cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
-                    width = x2 - x1
-                    height = y2 - y1
-                    
                     # Renk seç
                     color = colors[i % len(colors)]
-
-                    # Eğer tespit implant ise (varsayılan olarak "implant" sınıfı için)
-                    if "implant" in label.lower():
-                        # İmplant için kontur çizimi
-                        # Görüntüyü kesip binary mask oluştur
-                        roi = img_array[int(y1):int(y2), int(x1):int(x2)]
-                        if len(roi.shape) == 3:
-                            roi_gray = cv2.cvtColor(roi, cv2.COLOR_RGB2GRAY)
-                        else:
-                            roi_gray = roi
-                        
-                        # Threshold uygula
-                        _, binary = cv2.threshold(roi_gray, 127, 255, cv2.THRESH_BINARY)
-                        
-                        # Konturları bul
-                        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-                        
-                        if contours:
-                            # En büyük konturu al
-                            main_contour = max(contours, key=cv2.contourArea)
-                            
-                            # Kontur noktalarını orijinal koordinatlara dönüştür
-                            contour_points = main_contour.squeeze()
-                            if len(contour_points.shape) == 1:
-                                continue
-                                
-                            x_points = contour_points[:, 0] + x1
-                            y_points = contour_points[:, 1] + y1
-                            
-                            # Kontur çizgisini ekle
-                            fig.add_trace(go.Scatter(
-                                x=x_points,
-                                y=y_points,
-                                mode='lines',
-                                line=dict(
-                                    color=color,
-                                    width=2,
-                                ),
-                                fill='none',
-                                name=f"{label}",
-                                showlegend=True,
-                                hoverinfo='text',
-                                hovertext=f"{label}<br>Güven: {conf:.2%}"
-                            ))
-                            
-                            # Etiket ekle
-                            fig.add_annotation(
-                                x=cx,
-                                y=y1 - 10,
-                                text=f"{label}",
-                                showarrow=False,
-                                font=dict(
-                                    color='white',
-                                    size=12,
-                                    weight='bold'
-                                ),
-                                bgcolor=color,
-                                opacity=0.8,
-                                bordercolor=color,
-                                borderwidth=2,
-                                borderpad=4,
-                                align='center'
-                            )
                     
-                    # Eğer güven skoru yeterince yüksekse ve implant değilse
-                    elif conf > 0.5:
-                        # Normal tespitler için minimal işaretleme
+                    # ROI'yi kes
+                    roi = img_array[int(y1):int(y2), int(x1):int(x2)]
+                    if len(roi.shape) == 3:
+                        roi_gray = cv2.cvtColor(roi, cv2.COLOR_RGB2GRAY)
+                    else:
+                        roi_gray = roi
+                        
+                    # Adaptive threshold uygula
+                    roi_blur = cv2.GaussianBlur(roi_gray, (5, 5), 0)
+                    thresh = cv2.adaptiveThreshold(
+                        roi_blur,
+                        255,
+                        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                        cv2.THRESH_BINARY_INV,
+                        11,
+                        2
+                    )
+                    
+                    # Morfolojik işlemler
+                    kernel = np.ones((3,3), np.uint8)
+                    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+                    thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+                    
+                    # Konturları bul
+                    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    
+                    if contours and conf > 0.5:  # Sadece yüksek güvenli tespitler için
+                        # En büyük konturu al
+                        main_contour = max(contours, key=cv2.contourArea)
+                        
+                        # Konturu yumuşat
+                        epsilon = 0.005 * cv2.arcLength(main_contour, True)
+                        approx_contour = cv2.approxPolyDP(main_contour, epsilon, True)
+                        
+                        # Kontur noktalarını orijinal koordinatlara dönüştür
+                        contour_points = approx_contour.squeeze()
+                        if len(contour_points.shape) == 1:
+                            continue
+                            
+                        x_points = contour_points[:, 0] + x1
+                        y_points = contour_points[:, 1] + y1
+                        
+                        # Kontur çizgisini ekle
                         fig.add_trace(go.Scatter(
-                            x=[x1, x2, x2, x1, x1],
-                            y=[y1, y1, y2, y2, y1],
+                            x=x_points,
+                            y=y_points,
                             mode='lines',
-                            line=dict(color=color, width=2),
-                            name=label,
+                            line=dict(
+                                color=color,
+                                width=2,
+                            ),
+                            fill='none',
+                            name=f"{label} ({conf:.2%})",
                             showlegend=True,
                             hoverinfo='text',
                             hovertext=f"{label}<br>Güven: {conf:.2%}"
                         ))
-                    
-                    # Düşük güvenli tespitler için sadece göstergede göster
-                    else:
-                        fig.add_trace(go.Scatter(
-                            x=[],
-                            y=[],
-                            mode='none',
-                            name=f"{label} (Düşük Güven: {conf:.2%})",
-                            showlegend=True
-                        ))
-                    
-                    # Her tespit için etiket ekle
-                    if conf > 0.5:  # Sadece yüksek güvenli tespitler için etiket
+                        
+                        # Etiket ekle
                         fig.add_annotation(
-                            x=cx,
-                            y=y1 - 10,  # Etiket konumu
+                            x=np.mean(x_points),
+                            y=np.min(y_points) - 10,
                             text=f"{label}",
                             showarrow=False,
                             font=dict(
@@ -461,9 +426,19 @@ if uploaded_file is not None:
                             borderwidth=2,
                             borderpad=4,
                             align='center'
-                        )
+                        ))
+                    
+                    elif conf <= 0.5:  # Düşük güvenli tespitler için
+                        # Sadece göstergede göster
+                        fig.add_trace(go.Scatter(
+                            x=[],
+                            y=[],
+                            mode='none',
+                            name=f"{label} (Düşük Güven: {conf:.2%})",
+                            showlegend=True
+                        ))
 
-            # Update layout with improved legend
+            # Update layout
             fig.update_layout(
                 showlegend=True,
                 legend=dict(
@@ -474,8 +449,7 @@ if uploaded_file is not None:
                     bgcolor='rgba(0,0,0,0.5)',
                     font=dict(color='white', size=12),
                     bordercolor='white',
-                    borderwidth=1,
-                    groupclick="toggleitem"  # Her öğeyi bağımsız açıp kapatma
+                    borderwidth=1
                 ),
                 margin=dict(l=0, r=0, t=0, b=0),
                 xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
@@ -484,10 +458,6 @@ if uploaded_file is not None:
                 paper_bgcolor='black',
                 width=None,
                 height=600,
-                hoverlabel=dict(
-                    namelength=-1,
-                    font=dict(size=14)
-                ),
                 hovermode='closest'
             )
 

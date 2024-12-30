@@ -351,13 +351,12 @@ if uploaded_file is not None:
                     cls = int(box.cls)
                     full_label = results[0].names[cls]
                     base_label = full_label.split('_')[0].upper()
-                    is_true = "true" in full_label.lower()
-
-                    region_names.add(base_label)
+                    if base_label in ["HIP", "SHOULDER"]:
+                        region_names.add(base_label)
 
                     # Bölge ismini görüntüde göster
                     cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
-                    if is_true:  # Yalnızca "true" tespitler için çizim
+                    if "true" in full_label.lower():  # Yalnızca "true" tespitler için çizim
                         width = x2 - x1
                         height = y2 - y1
                         color = colors[i % len(colors)]
@@ -392,16 +391,16 @@ if uploaded_file is not None:
                     fig.add_annotation(
                         x=cx,
                         y=y1 - 10,
-                        text=f"{base_label}<br>{conf:.1%}" if is_true else base_label,
+                        text=base_label,
                         showarrow=False,
                         font=dict(
                             color='white',
                             size=12,
                             weight='bold'
                         ),
-                        bgcolor=color if is_true else 'rgba(0, 0, 0, 0.7)',
+                        bgcolor=color if "true" in full_label.lower() else 'rgba(0, 0, 0, 0.7)',
                         opacity=0.7,
-                        bordercolor=color if is_true else 'white',
+                        bordercolor=color if "true" in full_label.lower() else 'white',
                         borderwidth=2,
                         borderpad=4,
                         align='center'
@@ -453,6 +452,7 @@ if uploaded_file is not None:
                 ),
                 hovermode='closest'
             )
+
             
             # X-ray görüntülerini yan yana göster
             col_img1, col_img2 = st.columns(2)

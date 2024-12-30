@@ -352,58 +352,8 @@ if uploaded_file is not None:
                     color = colors[i % len(colors)]
                     
                     if conf > 0.5:  # Sadece yüksek güvenli tespitler için
-                        # ROI'yi kes
-                        roi = img_array[int(y1):int(y2), int(x1):int(x2)]
-                        if len(roi.shape) == 3:
-                            roi_gray = cv2.cvtColor(roi, cv2.COLOR_RGB2GRAY)
-                        else:
-                            roi_gray = roi
-                        
-                        # Görüntü ön işleme
-                        roi_gray = cv2.GaussianBlur(roi_gray, (3, 3), 0)
-                        
-                        # Otsu threshold uygula
-                        _, binary = cv2.threshold(roi_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-                        
-                        # Canny edge detection
-                        edges = cv2.Canny(binary, 50, 150)
-                        
-                        # Konturları bul
-                        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_KCOS)
-                        
-                        if contours:
-                            # En büyük konturu al
-                            main_contour = max(contours, key=cv2.contourArea)
-                            
-                            # Konturu yumuşat ve basitleştir
-                            epsilon = 0.002 * cv2.arcLength(main_contour, True)
-                            approx_contour = cv2.approxPolyDP(main_contour, epsilon, True)
-                            
-                            # Kontur noktalarını orijinal koordinatlara dönüştür
-                            contour_points = approx_contour.squeeze()
-                            if len(contour_points.shape) == 1:
-                                continue
-                                
-                            x_points = contour_points[:, 0] + x1
-                            y_points = contour_points[:, 1] + y1
-                            
-                            # Kontur çizgisini ekle
-                            fig.add_trace(go.Scatter(
-                                x=x_points,
-                                y=y_points,
-                                mode='lines',
-                                line=dict(
-                                    color=color,
-                                    width=2,
-                                ),
-                                fill='none',
-                                name=f"{label} ({conf:.2%})",
-                                showlegend=True,
-                                hoverinfo='text',
-                                hovertext=f"{label}<br>Güven: {conf:.2%}"
-                            ))
-                        else:
-                            # Kontur bulunamazsa basit bir çerçeve çiz
+                        if "implant" in label.lower():  # İmplant tespiti için
+                            # İmplant bölgesini noktalı çizgi ile işaretle
                             fig.add_trace(go.Scatter(
                                 x=[x1, x2, x2, x1, x1],
                                 y=[y1, y1, y2, y2, y1],
@@ -411,17 +361,19 @@ if uploaded_file is not None:
                                 line=dict(
                                     color=color,
                                     width=2,
-                                    dash='dot'
+                                    dash='dot'  # Noktalı çizgi
                                 ),
-                                name=f"{label} ({conf:.2%})",
-                                showlegend=True
+                                name=f"{label} (İmplant)",
+                                showlegend=True,
+                                hoverinfo='text',
+                                hovertext=f"İmplant<br>Güven: {conf:.2%}"
                             ))
                         
-                        # Etiket ekle
+                        # Her tespit için üst kısımda etiket göster
                         fig.add_annotation(
-                            x=np.mean([x1, x2]),
-                            y=y1 - 10,
-                            text=f"{label}",
+                            x=10,  # Sol tarafta sabit x pozisyonu
+                            y=600 - (i * 30),  # Her etiket için yukarıdan aşağıya sıralama
+                            text=f"{label}: {'VAR' if 'implant' in label.lower() else 'YOK'} ({conf:.2%})",
                             showarrow=False,
                             font=dict(
                                 color='white',
@@ -433,7 +385,8 @@ if uploaded_file is not None:
                             bordercolor=color,
                             borderwidth=2,
                             borderpad=4,
-                            align='center'
+                            align='left',
+                            xanchor='left'
                         )
                     
                     else:  # Düşük güvenli tespitler için
@@ -459,7 +412,7 @@ if uploaded_file is not None:
                     bordercolor='white',
                     borderwidth=1
                 ),
-                margin=dict(l=0, r=0, t=0, b=0),
+                margin=dict(l=0, r=0, t=50, b=0),  # Üst kısımda etiketler için boşluk
                 xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                 yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                 plot_bgcolor='black',

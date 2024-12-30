@@ -387,63 +387,61 @@ if uploaded_file is not None:
                     # Renk seç
                     color = colors[i % len(colors)]
 
-                    # Sadece true olan tespitler için işaretleme yap
+                    # True tespitler için kalın ve sürekli çizgi
                     if is_true:
-                        # True tespiti için özel path çizimi
-                        points = np.array([
-                            [x1, y1],  # Sol üst
-                            [cx, y1 - height*0.1],  # Üst orta
-                            [x2, y1],  # Sağ üst
-                            [x2 + width*0.1, cy],  # Sağ orta
-                            [x2, y2],  # Sağ alt
-                            [cx, y2 + height*0.1],  # Alt orta
-                            [x1, y2],  # Sol alt
-                            [x1 - width*0.1, cy],  # Sol orta
-                            [x1, y1]  # Başlangıç noktasına dön
-                        ])
-                        
-                        # Path çizimi
-                        fig.add_trace(go.Scatter(
-                            x=points[:, 0],
-                            y=points[:, 1],
-                            mode='lines',
-                            line=dict(
-                                color=color,
-                                width=2,
-                            ),
-                            name=base_label,  # Sadece bölge ismi
-                            showlegend=True,
-                            hoverinfo='text',
-                            hovertext=f"{base_label}<br>Güven: {conf:.2%}"
-                        ))
-                        
-                        # Etiket ekle
-                        fig.add_annotation(
-                            x=cx,
-                            y=y1 - 10,
-                            text=f"{base_label}<br>{conf:.2%}",  # Sadece bölge ismi
-                            showarrow=False,
-                            font=dict(
-                                color='white',
-                                size=12,
-                                weight='bold'
-                            ),
-                            bgcolor=color,
-                            opacity=0.8,
-                            bordercolor=color,
-                            borderwidth=2,
-                            borderpad=4,
-                            align='center'
-                        )
+                        line_style = dict(color=color, width=3)
+                        opacity = 0.7
+                    # False tespitler için ince ve kesikli çizgi
                     else:
-                        # False tespitler için sadece göstergede göster
-                        fig.add_trace(go.Scatter(
-                            x=[],
-                            y=[],
-                            mode='none',
-                            name=f"{base_label} (Güven: {conf:.2%})",  # Sadece bölge ismi
-                            showlegend=True
-                        ))
+                        line_style = dict(color=color, width=2, dash='dash')
+                        opacity = 0.4
+
+                    # Her tespit için path çizimi
+                    points = np.array([
+                        [x1, y1],  # Sol üst
+                        [cx, y1 - height*0.1],  # Üst orta
+                        [x2, y1],  # Sağ üst
+                        [x2 + width*0.1, cy],  # Sağ orta
+                        [x2, y2],  # Sağ alt
+                        [cx, y2 + height*0.1],  # Alt orta
+                        [x1, y2],  # Sol alt
+                        [x1 - width*0.1, cy],  # Sol orta
+                        [x1, y1]  # Başlangıç noktasına dön
+                    ])
+                    
+                    # Path çizimi
+                    fig.add_trace(go.Scatter(
+                        x=points[:, 0],
+                        y=points[:, 1],
+                        mode='lines',
+                        line=line_style,
+                        name=f"{base_label} ({'Pozitif' if is_true else 'Negatif'})" if selected_language == "Türkçe" 
+                             else f"{base_label} ({'Positive' if is_true else 'Negative'})",
+                        showlegend=True,
+                        hoverinfo='text',
+                        hovertext=f"{base_label}<br>{'Pozitif' if is_true else 'Negatif'}<br>Güven: {conf:.2%}" 
+                                if selected_language == "Türkçe" 
+                                else f"{base_label}<br>{'Positive' if is_true else 'Negative'}<br>Confidence: {conf:.2%}"
+                    ))
+                    
+                    # Etiket ekle
+                    fig.add_annotation(
+                        x=cx,
+                        y=y1 - 10,
+                        text=f"{base_label}<br>{'P' if is_true else 'N'} ({conf:.1%})",
+                        showarrow=False,
+                        font=dict(
+                            color='white',
+                            size=12,
+                            weight='bold'
+                        ),
+                        bgcolor=color,
+                        opacity=opacity,
+                        bordercolor=color,
+                        borderwidth=2,
+                        borderpad=4,
+                        align='center'
+                    )
 
             # Update layout with improved legend
             fig.update_layout(

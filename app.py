@@ -345,15 +345,15 @@ if uploaded_file is not None:
                 
                 # Önce bölge ismini ekle (sol üst köşe)
                 if len(boxes) > 0:
-                    # İlk tespitin sınıfını al
+                    # İlk tespitin sınıfını al ve sadece bölge ismini kullan
                     first_cls = int(boxes[0].cls)
-                    region_name = results[0].names[first_cls].split('_')[0]  # true/false kısmını kaldır
+                    region_name = results[0].names[first_cls].split('_')[0].upper()  # true/false kısmını kaldır
                     
                     # Bölge ismini sol üst köşeye ekle
                     fig.add_annotation(
-                        x=50,  # Sabit x pozisyonu
-                        y=50,  # Sabit y pozisyonu
-                        text=f"Bölge: {region_name.upper()}" if selected_language == "Türkçe" else f"Region: {region_name.upper()}",
+                        x=50,
+                        y=50,
+                        text=f"Bölge: {region_name}" if selected_language == "Türkçe" else f"Region: {region_name}",
                         showarrow=False,
                         font=dict(
                             color='white',
@@ -374,7 +374,10 @@ if uploaded_file is not None:
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     conf = float(box.conf)
                     cls = int(box.cls)
-                    label = results[0].names[cls]
+                    full_label = results[0].names[cls]
+                    # Sadece bölge ismini al (true/false kısmını kaldır)
+                    base_label = full_label.split('_')[0].upper()
+                    is_true = "true" in full_label.lower()
                     
                     # Merkez noktaları
                     cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
@@ -384,8 +387,8 @@ if uploaded_file is not None:
                     # Renk seç
                     color = colors[i % len(colors)]
 
-                    # Sadece "true" olan tespitler için işaretleme yap
-                    if "true" in label.lower():
+                    # Sadece true olan tespitler için işaretleme yap
+                    if is_true:
                         # True tespiti için özel path çizimi
                         points = np.array([
                             [x1, y1],  # Sol üst
@@ -408,17 +411,17 @@ if uploaded_file is not None:
                                 color=color,
                                 width=2,
                             ),
-                            name=label,
+                            name=base_label,  # Sadece bölge ismi
                             showlegend=True,
                             hoverinfo='text',
-                            hovertext=f"{label}<br>Güven: {conf:.2%}"
+                            hovertext=f"{base_label}<br>Güven: {conf:.2%}"
                         ))
                         
                         # Etiket ekle
                         fig.add_annotation(
                             x=cx,
-                            y=y1 - 10,  # Etiket konumu
-                            text=f"{label}<br>{conf:.2%}",
+                            y=y1 - 10,
+                            text=f"{base_label}<br>{conf:.2%}",  # Sadece bölge ismi
                             showarrow=False,
                             font=dict(
                                 color='white',
@@ -438,7 +441,7 @@ if uploaded_file is not None:
                             x=[],
                             y=[],
                             mode='none',
-                            name=f"{label} (Güven: {conf:.2%})",
+                            name=f"{base_label} (Güven: {conf:.2%})",  # Sadece bölge ismi
                             showlegend=True
                         ))
 

@@ -345,11 +345,23 @@ if uploaded_file is not None:
                 
                 # Önce bölge ismini ekle (sol üst köşe)
                 if len(boxes) > 0:
-                    # İlk tespitin sınıfını al ve sadece bölge ismini kullan
-                    first_cls = int(boxes[0].cls)
-                    region_name = results[0].names[first_cls].split('_')[0].upper()  # true/false kısmını kaldır
+                    # Tüm tespitleri kontrol et ve true olan bölgeyi bul
+                    region_name = None
+                    for box in boxes:
+                        cls = int(box.cls)
+                        full_label = results[0].names[cls]
+                        base_label = full_label.split('_')[0].upper()
+                        is_true = "true" in full_label.lower()
+                        if is_true:
+                            region_name = base_label
+                            break
                     
-                    # Bölge ismini sol üst köşeye ekle (Positive/Negative olmadan)
+                    # Eğer true tespit bulunamazsa, ilk tespitin bölge ismini kullan
+                    if region_name is None:
+                        first_cls = int(boxes[0].cls)
+                        region_name = results[0].names[first_cls].split('_')[0].upper()
+                    
+                    # Bölge ismini sol üst köşeye ekle
                     fig.add_annotation(
                         x=50,
                         y=50,

@@ -319,9 +319,9 @@ if uploaded_file is not None:
         with st.spinner(texts['loading']):
             results = model.predict(img_array, conf=0.25)
             
-            # Debug için sınıf isimlerini kontrol et
+                        # Debug için sınıf isimlerini kontrol et
             st.write("Model Sınıfları:", results[0].names)
-            
+
             # Create Plotly figure
             fig = go.Figure()
 
@@ -342,46 +342,8 @@ if uploaded_file is not None:
             # Add detected areas with custom shapes based on class
             if len(results) > 0 and results[0].boxes is not None:
                 boxes = results[0].boxes
-                
-                # Önce bölge ismini ekle (sol üst köşe)
-                if len(boxes) > 0:
-                    # Tüm tespitleri kontrol et ve true olan bölgeyi bul
-                    region_name = None
-                    for box in boxes:
-                        cls = int(box.cls)
-                        full_label = results[0].names[cls]
-                        base_label = full_label.split('_')[0].upper()
-                        is_true = "true" in full_label.lower()
-                        if is_true:
-                            region_name = base_label
-                            break
-                    
-                    # Eğer true tespit bulunamazsa, ilk tespitin bölge ismini kullan
-                    if region_name is None:
-                        first_cls = int(boxes[0].cls)
-                        region_name = results[0].names[first_cls].split('_')[0].upper()
-                    
-                    # Bölge ismini sol üst köşeye ekle
-                    fig.add_annotation(
-                        x=50,
-                        y=50,
-                        text=f"Bölge: {region_name}" if selected_language == "Türkçe" else f"Region: {region_name}",
-                        showarrow=False,
-                        font=dict(
-                            color='white',
-                            size=16,
-                            weight='bold'
-                        ),
-                        bgcolor='rgba(0,0,0,0.7)',
-                        bordercolor='white',
-                        borderwidth=2,
-                        borderpad=4,
-                        align='left',
-                        xanchor='left',
-                        yanchor='top'
-                    )
-                
-                # Sonra normal tespitleri işle
+
+                # Her tespitin bölge ismini ekle (sol üst köşe)
                 for i, box in enumerate(boxes):
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     conf = float(box.conf)
@@ -389,14 +351,14 @@ if uploaded_file is not None:
                     full_label = results[0].names[cls]
                     base_label = full_label.split('_')[0].upper()
                     is_true = "true" in full_label.lower()
-                    
-                    # Sadece true tespitler için işaretleme yap
-                    if is_true:
-                        cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+
+                    # Bölge ismini görüntüde göster
+                    cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+                    if is_true:  # Yalnızca "true" tespitler için çizim
                         width = x2 - x1
                         height = y2 - y1
                         color = colors[i % len(colors)]
-                        
+
                         # Path çizimi için noktalar
                         points = np.array([
                             [x1, y1],  # Sol üst
@@ -409,7 +371,7 @@ if uploaded_file is not None:
                             [x1 - width*0.1, cy],  # Sol orta
                             [x1, y1]  # Başlangıç noktasına dön
                         ])
-                        
+
                         # Path çizimi
                         fig.add_trace(go.Scatter(
                             x=points[:, 0],
@@ -422,25 +384,25 @@ if uploaded_file is not None:
                             hovertext=f"{base_label}<br>Güven: {conf:.2%}" if selected_language == "Türkçe" 
                                     else f"{base_label}<br>Confidence: {conf:.2%}"
                         ))
-                        
-                        # Etiket ekle
-                        fig.add_annotation(
-                            x=cx,
-                            y=y1 - 10,
-                            text=f"{base_label}<br>{conf:.1%}",
-                            showarrow=False,
-                            font=dict(
-                                color='white',
-                                size=12,
-                                weight='bold'
-                            ),
-                            bgcolor=color,
-                            opacity=0.7,
-                            bordercolor=color,
-                            borderwidth=2,
-                            borderpad=4,
-                            align='center'
-                        )
+
+                    # Etiket ekle (her zaman bölge ismi göster)
+                    fig.add_annotation(
+                        x=cx,
+                        y=y1 - 10,
+                        text=f"{base_label}<br>{conf:.1%}" if is_true else base_label,
+                        showarrow=False,
+                        font=dict(
+                            color='white',
+                            size=12,
+                            weight='bold'
+                        ),
+                        bgcolor=color if is_true else 'rgba(0, 0, 0, 0.7)',
+                        opacity=0.7,
+                        bordercolor=color if is_true else 'white',
+                        borderwidth=2,
+                        borderpad=4,
+                        align='center'
+                    )
 
             # Update layout with improved legend
             fig.update_layout(
@@ -469,7 +431,7 @@ if uploaded_file is not None:
                 ),
                 hovermode='closest'
             )
-
+            
             # X-ray görüntülerini yan yana göster
             col_img1, col_img2 = st.columns(2)
             

@@ -426,7 +426,7 @@ if uploaded_file is not None:
                             borderwidth=2,
                             borderpad=4,
                             align='center'
-                        ))
+                        )
                     
                     elif conf <= 0.5:  # Düşük güvenli tespitler için
                         # Sadece göstergede göster

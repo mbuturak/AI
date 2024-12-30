@@ -356,75 +356,41 @@ if uploaded_file is not None:
                     # Renk seç
                     color = colors[i % len(colors)]
 
-                    # Eğer tespit implant ise (varsayılan olarak "implant" sınıfı için)
-                    if "implant" in label.lower():
-                        # İmplant için özel path çizimi
-                        rx, ry = width/2, height/2
-                        t = np.linspace(0, 2*np.pi, 100)
-                        path_x = cx + (rx * 1.2) * np.cos(t)  # Biraz daha geniş path
-                        path_y = cy + (ry * 1.2) * np.sin(t)
+                    # Sadece "true" olan tespitler için işaretleme yap
+                    if "true" in label.lower():
+                        # True tespiti için özel path çizimi
+                        points = np.array([
+                            [x1, y1],  # Sol üst
+                            [cx, y1 - height*0.1],  # Üst orta
+                            [x2, y1],  # Sağ üst
+                            [x2 + width*0.1, cy],  # Sağ orta
+                            [x2, y2],  # Sağ alt
+                            [cx, y2 + height*0.1],  # Alt orta
+                            [x1, y2],  # Sol alt
+                            [x1 - width*0.1, cy],  # Sol orta
+                            [x1, y1]  # Başlangıç noktasına dön
+                        ])
                         
+                        # Path çizimi
                         fig.add_trace(go.Scatter(
-                            x=path_x,
-                            y=path_y,
+                            x=points[:, 0],
+                            y=points[:, 1],
                             mode='lines',
                             line=dict(
                                 color=color,
-                                width=3,
-                                dash='dot'  # Noktalı çizgi
+                                width=2,
                             ),
-                            name=f"{label} (Path)",
-                            showlegend=False
-                        ))
-                        
-                        # İmplant bölgesini işaretle
-                        fig.add_trace(go.Scatter(
-                            x=[x1, x2, x2, x1, x1],
-                            y=[y1, y1, y2, y2, y1],
-                            fill="toself",
-                            fillcolor=color,
-                            line=dict(color=color, width=2),
-                            opacity=0.3,
-                            name=label,
-                            showlegend=True,
-                            hoverinfo='text',
-                            hovertext=f"{label}<br>Güven: {conf:.2%}",
-                            hoverlabel=dict(
-                                bgcolor=color,
-                                font=dict(color='white', size=14)
-                            )
-                        ))
-                    
-                    # Eğer güven skoru yeterince yüksekse (örn: 0.5'ten büyük)
-                    elif conf > 0.5:
-                        # Normal tespitler için minimal işaretleme
-                        fig.add_trace(go.Scatter(
-                            x=[x1, x2, x2, x1, x1],
-                            y=[y1, y1, y2, y2, y1],
-                            mode='lines',
-                            line=dict(color=color, width=2),
                             name=label,
                             showlegend=True,
                             hoverinfo='text',
                             hovertext=f"{label}<br>Güven: {conf:.2%}"
                         ))
-                    
-                    # Düşük güvenli tespitler için sadece göstergede göster
-                    else:
-                        fig.add_trace(go.Scatter(
-                            x=[],
-                            y=[],
-                            mode='none',
-                            name=f"{label} (Düşük Güven: {conf:.2%})",
-                            showlegend=True
-                        ))
-                    
-                    # Her tespit için etiket ekle
-                    if conf > 0.5:  # Sadece yüksek güvenli tespitler için etiket
+                        
+                        # Etiket ekle
                         fig.add_annotation(
                             x=cx,
                             y=y1 - 10,  # Etiket konumu
-                            text=f"{label}",
+                            text=f"{label}<br>{conf:.2%}",
                             showarrow=False,
                             font=dict(
                                 color='white',
@@ -438,6 +404,15 @@ if uploaded_file is not None:
                             borderpad=4,
                             align='center'
                         )
+                    else:
+                        # False tespitler için sadece göstergede göster
+                        fig.add_trace(go.Scatter(
+                            x=[],
+                            y=[],
+                            mode='none',
+                            name=f"{label} (Güven: {conf:.2%})",
+                            showlegend=True
+                        ))
 
             # Update layout with improved legend
             fig.update_layout(

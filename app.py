@@ -342,6 +342,34 @@ if uploaded_file is not None:
             # Add detected areas with custom shapes based on class
             if len(results) > 0 and results[0].boxes is not None:
                 boxes = results[0].boxes
+                
+                # Önce bölge ismini ekle (sol üst köşe)
+                if len(boxes) > 0:
+                    # İlk tespitin sınıfını al
+                    first_cls = int(boxes[0].cls)
+                    region_name = results[0].names[first_cls].split('_')[0]  # true/false kısmını kaldır
+                    
+                    # Bölge ismini sol üst köşeye ekle
+                    fig.add_annotation(
+                        x=50,  # Sabit x pozisyonu
+                        y=50,  # Sabit y pozisyonu
+                        text=f"Bölge: {region_name.upper()}" if selected_language == "Türkçe" else f"Region: {region_name.upper()}",
+                        showarrow=False,
+                        font=dict(
+                            color='white',
+                            size=16,
+                            weight='bold'
+                        ),
+                        bgcolor='rgba(0,0,0,0.7)',
+                        bordercolor='white',
+                        borderwidth=2,
+                        borderpad=4,
+                        align='left',
+                        xanchor='left',
+                        yanchor='top'
+                    )
+                
+                # Sonra normal tespitleri işle
                 for i, box in enumerate(boxes):
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     conf = float(box.conf)

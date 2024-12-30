@@ -358,44 +358,68 @@ if uploaded_file is not None:
 
                     # Eğer tespit implant ise (varsayılan olarak "implant" sınıfı için)
                     if "implant" in label.lower():
-                        # İmplant için özel path çizimi
-                        rx, ry = width/2, height/2
-                        t = np.linspace(0, 2*np.pi, 100)
-                        path_x = cx + (rx * 1.2) * np.cos(t)  # Biraz daha geniş path
-                        path_y = cy + (ry * 1.2) * np.sin(t)
+                        # İmplant için kontur çizimi
+                        # Görüntüyü kesip binary mask oluştur
+                        roi = img_array[int(y1):int(y2), int(x1):int(x2)]
+                        if len(roi.shape) == 3:
+                            roi_gray = cv2.cvtColor(roi, cv2.COLOR_RGB2GRAY)
+                        else:
+                            roi_gray = roi
                         
-                        fig.add_trace(go.Scatter(
-                            x=path_x,
-                            y=path_y,
-                            mode='lines',
-                            line=dict(
-                                color=color,
-                                width=3,
-                                dash='dot'  # Noktalı çizgi
-                            ),
-                            name=f"{label} (Path)",
-                            showlegend=False
-                        ))
+                        # Threshold uygula
+                        _, binary = cv2.threshold(roi_gray, 127, 255, cv2.THRESH_BINARY)
                         
-                        # İmplant bölgesini işaretle
-                        fig.add_trace(go.Scatter(
-                            x=[x1, x2, x2, x1, x1],
-                            y=[y1, y1, y2, y2, y1],
-                            fill="toself",
-                            fillcolor=color,
-                            line=dict(color=color, width=2),
-                            opacity=0.3,
-                            name=label,
-                            showlegend=True,
-                            hoverinfo='text',
-                            hovertext=f"{label}<br>Güven: {conf:.2%}",
-                            hoverlabel=dict(
+                        # Konturları bul
+                        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+                        
+                        if contours:
+                            # En büyük konturu al
+                            main_contour = max(contours, key=cv2.contourArea)
+                            
+                            # Kontur noktalarını orijinal koordinatlara dönüştür
+                            contour_points = main_contour.squeeze()
+                            if len(contour_points.shape) == 1:
+                                continue
+                                
+                            x_points = contour_points[:, 0] + x1
+                            y_points = contour_points[:, 1] + y1
+                            
+                            # Kontur çizgisini ekle
+                            fig.add_trace(go.Scatter(
+                                x=x_points,
+                                y=y_points,
+                                mode='lines',
+                                line=dict(
+                                    color=color,
+                                    width=2,
+                                ),
+                                fill='none',
+                                name=f"{label}",
+                                showlegend=True,
+                                hoverinfo='text',
+                                hovertext=f"{label}<br>Güven: {conf:.2%}"
+                            ))
+                            
+                            # Etiket ekle
+                            fig.add_annotation(
+                                x=cx,
+                                y=y1 - 10,
+                                text=f"{label}",
+                                showarrow=False,
+                                font=dict(
+                                    color='white',
+                                    size=12,
+                                    weight='bold'
+                                ),
                                 bgcolor=color,
-                                font=dict(color='white', size=14)
+                                opacity=0.8,
+                                bordercolor=color,
+                                borderwidth=2,
+                                borderpad=4,
+                                align='center'
                             )
-                        ))
                     
-                    # Eğer güven skoru yeterince yüksekse (örn: 0.5'ten büyük)
+                    # Eğer güven skoru yeterince yüksekse ve implant değilse
                     elif conf > 0.5:
                         # Normal tespitler için minimal işaretleme
                         fig.add_trace(go.Scatter(

@@ -344,6 +344,7 @@ if uploaded_file is not None:
                 boxes = results[0].boxes
 
                 # Her tespitin bölge ismini ekle (sol üst köşe)
+                region_names = set()
                 for i, box in enumerate(boxes):
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     conf = float(box.conf)
@@ -351,6 +352,8 @@ if uploaded_file is not None:
                     full_label = results[0].names[cls]
                     base_label = full_label.split('_')[0].upper()
                     is_true = "true" in full_label.lower()
+
+                    region_names.add(base_label)
 
                     # Bölge ismini görüntüde göster
                     cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
@@ -362,13 +365,13 @@ if uploaded_file is not None:
                         # Path çizimi için noktalar
                         points = np.array([
                             [x1, y1],  # Sol üst
-                            [cx, y1 - height*0.1],  # Üst orta
+                            [cx, y1 - height * 0.1],  # Üst orta
                             [x2, y1],  # Sağ üst
-                            [x2 + width*0.1, cy],  # Sağ orta
+                            [x2 + width * 0.1, cy],  # Sağ orta
                             [x2, y2],  # Sağ alt
-                            [cx, y2 + height*0.1],  # Alt orta
+                            [cx, y2 + height * 0.1],  # Alt orta
                             [x1, y2],  # Sol alt
-                            [x1 - width*0.1, cy],  # Sol orta
+                            [x1 - width * 0.1, cy],  # Sol orta
                             [x1, y1]  # Başlangıç noktasına dön
                         ])
 
@@ -381,8 +384,8 @@ if uploaded_file is not None:
                             name=base_label,
                             showlegend=True,
                             hoverinfo='text',
-                            hovertext=f"{base_label}<br>Güven: {conf:.2%}" if selected_language == "Türkçe" 
-                                    else f"{base_label}<br>Confidence: {conf:.2%}"
+                            hovertext=f"{base_label}<br>Güven: {conf:.2%}" if selected_language == "Türkçe"
+                            else f"{base_label}<br>Confidence: {conf:.2%}"
                         ))
 
                     # Etiket ekle (her zaman bölge ismi göster)
@@ -403,6 +406,25 @@ if uploaded_file is not None:
                         borderpad=4,
                         align='center'
                     )
+
+                # Sol üst köşede tüm bölge isimlerini listele
+                fig.add_annotation(
+                    x=50,
+                    y=50,
+                    text=f"Bölgeler: {', '.join(sorted(region_names))}" if selected_language == "Türkçe" 
+                    else f"Regions: {', '.join(sorted(region_names))}",
+                    showarrow=False,
+                    font=dict(
+                        color='white',
+                        size=14,
+                        weight='bold'
+                    ),
+                    bgcolor='rgba(0, 0, 0, 0.7)',
+                    bordercolor='white',
+                    borderwidth=2,
+                    borderpad=4,
+                    align='left'
+                )
 
             # Update layout with improved legend
             fig.update_layout(

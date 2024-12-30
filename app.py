@@ -339,7 +339,7 @@ if uploaded_file is not None:
                 '#FFD700',  # Altın
             ]
 
-            # Add detected areas with custom shapes based on class
+            # Add detected areas with smooth shapes
             if len(results) > 0 and results[0].boxes is not None:
                 boxes = results[0].boxes
                 for i, box in enumerate(boxes):
@@ -348,77 +348,77 @@ if uploaded_file is not None:
                     cls = int(box.cls)
                     label = results[0].names[cls]
                     
+                    # Merkez ve yarıçap hesapla
+                    cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+                    rx, ry = (x2 - x1) / 2, (y2 - y1) / 2
+
+                    # Elips için noktalar oluştur
+                    t = np.linspace(0, 2*np.pi, 100)
+                    x = cx + rx * np.cos(t)
+                    y = cy + ry * np.sin(t)
+                    
                     # Renk seç
                     color = colors[i % len(colors)]
                     
-                    if conf > 0.5:  # Sadece yüksek güvenli tespitler için
-                        if "implant" in label.lower():  # İmplant tespiti için
-                            # İmplant bölgesini noktalı çizgi ile işaretle
-                            fig.add_trace(go.Scatter(
-                                x=[x1, x2, x2, x1, x1],
-                                y=[y1, y1, y2, y2, y1],
-                                mode='lines',
-                                line=dict(
-                                    color=color,
-                                    width=2,
-                                    dash='dot'  # Noktalı çizgi
-                                ),
-                                name=f"{label} (İmplant)",
-                                showlegend=True,
-                                hoverinfo='text',
-                                hovertext=f"İmplant<br>Güven: {conf:.2%}"
-                            ))
-                        
-                        # Her tespit için üst kısımda etiket göster
-                        fig.add_annotation(
-                            x=10,  # Sol tarafta sabit x pozisyonu
-                            y=600 - (i * 30),  # Her etiket için yukarıdan aşağıya sıralama
-                            text=f"{label}: {'VAR' if 'implant' in label.lower() else 'YOK'} ({conf:.2%})",
-                            showarrow=False,
-                            font=dict(
-                                color='white',
-                                size=12,
-                                weight='bold'
-                            ),
+                    # Çerçeve ve etiket ekle
+                    fig.add_trace(go.Scatter(
+                        x=x,
+                        y=y,
+                        fill="toself",
+                        fillcolor=color,
+                        line=dict(color=color, width=2),  # Çerçeve kalınlığını artır
+                        opacity=0.3,  # Opaklığı azalt
+                        name=label,
+                        showlegend=True,  # Göstergeyi aktifleştir
+                        hoverinfo='text',
+                        hovertext=f"{label}<br>Güven: {conf:.2%}",
+                        hoverlabel=dict(
                             bgcolor=color,
-                            opacity=0.8,
-                            bordercolor=color,
-                            borderwidth=2,
-                            borderpad=4,
-                            align='left',
-                            xanchor='left'
+                            font=dict(color='white', size=14)  # Yazı boyutunu artır
                         )
+                    ))
                     
-                    else:  # Düşük güvenli tespitler için
-                        # Sadece göstergede göster
-                        fig.add_trace(go.Scatter(
-                            x=[],
-                            y=[],
-                            mode='none',
-                            name=f"{label} (Düşük Güven: {conf:.2%})",
-                            showlegend=True
-                        ))
+                    # Etiket ekle
+                    fig.add_annotation(
+                        x=cx,
+                        y=cy,
+                        text=f"{label}<br>{conf:.2%}",
+                        showarrow=False,
+                        font=dict(
+                            color='white',
+                            size=12,
+                            weight='bold'
+                        ),
+                        bgcolor=color,
+                        opacity=0.8,
+                        bordercolor=color,
+                        borderwidth=2,
+                        borderpad=4,
+                        align='center'
+                    )
 
             # Update layout
             fig.update_layout(
-                showlegend=True,
+                showlegend=True,  # Göstergeyi göster
                 legend=dict(
                     yanchor="top",
                     y=0.99,
                     xanchor="left",
                     x=0.01,
                     bgcolor='rgba(0,0,0,0.5)',
-                    font=dict(color='white', size=12),
-                    bordercolor='white',
-                    borderwidth=1
+                    font=dict(color='white', size=12)
                 ),
-                margin=dict(l=0, r=0, t=50, b=0),  # Üst kısımda etiketler için boşluk
+                margin=dict(l=0, r=0, t=0, b=0),
                 xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                 yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                 plot_bgcolor='black',
                 paper_bgcolor='black',
                 width=None,
                 height=600,
+                hoverlabel=dict(
+                    namelength=-1,
+                    font=dict(size=14)
+                ),
                 hovermode='closest'
             )
 

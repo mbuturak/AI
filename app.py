@@ -351,68 +351,76 @@ if uploaded_file is not None:
                     # Renk seç
                     color = colors[i % len(colors)]
                     
-                    # ROI'yi kes
-                    roi = img_array[int(y1):int(y2), int(x1):int(x2)]
-                    if len(roi.shape) == 3:
-                        roi_gray = cv2.cvtColor(roi, cv2.COLOR_RGB2GRAY)
-                    else:
-                        roi_gray = roi
+                    if conf > 0.5:  # Sadece yüksek güvenli tespitler için
+                        # ROI'yi kes
+                        roi = img_array[int(y1):int(y2), int(x1):int(x2)]
+                        if len(roi.shape) == 3:
+                            roi_gray = cv2.cvtColor(roi, cv2.COLOR_RGB2GRAY)
+                        else:
+                            roi_gray = roi
                         
-                    # Adaptive threshold uygula
-                    roi_blur = cv2.GaussianBlur(roi_gray, (5, 5), 0)
-                    thresh = cv2.adaptiveThreshold(
-                        roi_blur,
-                        255,
-                        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                        cv2.THRESH_BINARY_INV,
-                        11,
-                        2
-                    )
-                    
-                    # Morfolojik işlemler
-                    kernel = np.ones((3,3), np.uint8)
-                    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-                    thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
-                    
-                    # Konturları bul
-                    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                    
-                    if contours and conf > 0.5:  # Sadece yüksek güvenli tespitler için
-                        # En büyük konturu al
-                        main_contour = max(contours, key=cv2.contourArea)
+                        # Görüntü ön işleme
+                        roi_gray = cv2.GaussianBlur(roi_gray, (3, 3), 0)
                         
-                        # Konturu yumuşat
-                        epsilon = 0.005 * cv2.arcLength(main_contour, True)
-                        approx_contour = cv2.approxPolyDP(main_contour, epsilon, True)
+                        # Otsu threshold uygula
+                        _, binary = cv2.threshold(roi_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
                         
-                        # Kontur noktalarını orijinal koordinatlara dönüştür
-                        contour_points = approx_contour.squeeze()
-                        if len(contour_points.shape) == 1:
-                            continue
+                        # Canny edge detection
+                        edges = cv2.Canny(binary, 50, 150)
+                        
+                        # Konturları bul
+                        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_KCOS)
+                        
+                        if contours:
+                            # En büyük konturu al
+                            main_contour = max(contours, key=cv2.contourArea)
                             
-                        x_points = contour_points[:, 0] + x1
-                        y_points = contour_points[:, 1] + y1
-                        
-                        # Kontur çizgisini ekle
-                        fig.add_trace(go.Scatter(
-                            x=x_points,
-                            y=y_points,
-                            mode='lines',
-                            line=dict(
-                                color=color,
-                                width=2,
-                            ),
-                            fill='none',
-                            name=f"{label} ({conf:.2%})",
-                            showlegend=True,
-                            hoverinfo='text',
-                            hovertext=f"{label}<br>Güven: {conf:.2%}"
-                        ))
+                            # Konturu yumuşat ve basitleştir
+                            epsilon = 0.002 * cv2.arcLength(main_contour, True)
+                            approx_contour = cv2.approxPolyDP(main_contour, epsilon, True)
+                            
+                            # Kontur noktalarını orijinal koordinatlara dönüştür
+                            contour_points = approx_contour.squeeze()
+                            if len(contour_points.shape) == 1:
+                                continue
+                                
+                            x_points = contour_points[:, 0] + x1
+                            y_points = contour_points[:, 1] + y1
+                            
+                            # Kontur çizgisini ekle
+                            fig.add_trace(go.Scatter(
+                                x=x_points,
+                                y=y_points,
+                                mode='lines',
+                                line=dict(
+                                    color=color,
+                                    width=2,
+                                ),
+                                fill='none',
+                                name=f"{label} ({conf:.2%})",
+                                showlegend=True,
+                                hoverinfo='text',
+                                hovertext=f"{label}<br>Güven: {conf:.2%}"
+                            ))
+                        else:
+                            # Kontur bulunamazsa basit bir çerçeve çiz
+                            fig.add_trace(go.Scatter(
+                                x=[x1, x2, x2, x1, x1],
+                                y=[y1, y1, y2, y2, y1],
+                                mode='lines',
+                                line=dict(
+                                    color=color,
+                                    width=2,
+                                    dash='dot'
+                                ),
+                                name=f"{label} ({conf:.2%})",
+                                showlegend=True
+                            ))
                         
                         # Etiket ekle
                         fig.add_annotation(
-                            x=np.mean(x_points),
-                            y=np.min(y_points) - 10,
+                            x=np.mean([x1, x2]),
+                            y=y1 - 10,
                             text=f"{label}",
                             showarrow=False,
                             font=dict(
@@ -428,7 +436,7 @@ if uploaded_file is not None:
                             align='center'
                         )
                     
-                    elif conf <= 0.5:  # Düşük güvenli tespitler için
+                    else:  # Düşük güvenli tespitler için
                         # Sadece göstergede göster
                         fig.add_trace(go.Scatter(
                             x=[],

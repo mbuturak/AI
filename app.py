@@ -174,84 +174,84 @@ TEXTS = {
         X-Ray görüntüsü üzerine bindirilen ısı haritası, tespit edilen kemik bölgelerinin yoğunluğunu gösterir:
         
         - **Yüksek Yoğunluklu Bölgeler (Kırmızı/Sarı)**:
-          - Yakın konumda birden fazla kemik yapısının bulunduğunu gösterir
-          - Genellikle eklemler ve karmaşık anatomik yapılarda görülür
-          - Detaylı inceleme gerektirebilecek alanları işaret edebilir
+          - Indicates regions with multiple bone structures in close proximity
+          - Common in joints and complex anatomical structures
+          - May suggest areas requiring detailed examination
         
         - **Orta Yoğunluklu Bölgeler (Yeşil/Mavi)**:
-          - Kemik yapılarının orta düzeyde yoğunlaştığı bölgeleri gösterir
-          - Tipik olarak normal anatomik aralıkları temsil eder
+          - Shows moderate concentration of bone structures
+          - Typically represents normal anatomical spacing
         
         - **Düşük Yoğunluklu Bölgeler (Koyu Mavi)**:
-          - Daha az yapının tespit edildiği alanları gösterir
-          - Genellikle ana kemik grupları arasındaki boşlukları temsil eder
+          - Indicates areas with fewer detected structures
+          - May represent spaces between major bone groups
         
         Bu analiz şu konularda yardımcı olur:
-        - Yapısal karmaşıklığın yüksek olduğu bölgeleri belirleme
-        - Kemik dağılım modellerini anlama
-        - Daha yakından inceleme gerektirebilecek bölgeleri vurgulama
+        - Identifying areas of structural complexity
+        - Understanding bone distribution patterns
+        - Highlighting regions that may need closer examination
         """,
         'size_title': "Boyut Analizi",
         'size_text': """
         **Boyut Analizi Yorumu:**
         
-        Kutu grafiği, tespit edilen bölgelerin boyut dağılımını gösterir:
+        The box plot shows the size distribution of detected regions:
         
-        - Her kutu farklı bir anatomik yapıyı temsil eder
-        - Kutu, çeyrekler arası aralığı gösterir (25. ile 75. yüzdelik)
-        - Kutunun içindeki çizgi medyan boyutu gösterir
-        - Tekil noktalar spesifik tespitleri gösterir
+        - Each box represents a different anatomical structure
+        - The box shows the quartiles (25th to 75th percentile)
+        - The line inside the box is the median size
+        - Individual points show specific detections
         
-        Bu analiz şunlarda yardımcı olur:
-        - Farklı kemik yapılarının boyutlarını karşılaştırma
-        - Olağandışı büyük veya küçük tespitleri belirleme
-        - Her yapı için tipik boyut aralığını anlama
+        This helps in:
+        - Comparing sizes across different bone structures
+        - Identifying unusually large or small detections
+        - Understanding the typical size range for each structure
         """,
         'confidence_title': "Güven Skoru Analizi",
         'confidence_text': """
         **Güven Skoru Analizi:**
         
-        Keman grafiği, modelin güven skorlarının dağılımını gösterir:
+        The violin plot shows the distribution of model's confidence scores:
         
-        - Geniş bölümler daha yaygın güven değerlerini gösterir
-        - İçteki kutu çeyrekler ve medyanı gösterir
-        - Yüksek skorlar (1.0'a yakın) güçlü güveni gösterir
-        - Düşük skorlar daha az kesin tespitleri gösterir
+        - Wider sections indicate more common confidence values
+        - The box inside shows quartiles and median
+        - Higher scores (closer to 1.0) indicate stronger confidence
+        - Lower scores suggest less certain detections
         
-        Bu analiz şunlarda yardımcı olur:
-        - Tespitlerin güvenilirliğini değerlendirme
-        - Model kesinliğindeki örüntüleri belirleme
-        - Farklı yapılar için tespit kalitesini anlama
+        This helps in:
+        - Assessing the reliability of detections
+        - Identifying patterns in model certainty
+        - Understanding detection quality for different structures
         """,
         'symmetry_title': "Simetri Analizi",
         'symmetry_text': """
         **Simetri Analizi:**
         
-        Çubuk grafik, tespitlerin sol-sağ dağılımını karşılaştırır:
+        The bar chart compares left-right distribution of detections:
         
-        - Her taraftaki tespit sayısını gösterir
-        - Olası asimetrileri belirlemeye yardımcı olur
-        - İki taraflı karşılaştırma için kullanışlıdır
+        - Shows the number of detections on each side
+        - Helps identify potential asymmetries
+        - Useful for bilateral comparison
         
-        Şunlar için önemlidir:
-        - Yapısal dengeyi kontrol etme
-        - Potansiyel anomalileri belirleme
-        - Karşılaştırmalı analizi destekleme
+        Important for:
+        - Checking structural balance
+        - Identifying potential anomalies
+        - Supporting comparative analysis
         """,
         'distance_title': "Mesafe Analizi",
         'distance_text': """
         **Mesafe Analizi:**
         
-        Histogram, tespit edilen bölgeler arasındaki mesafelerin dağılımını gösterir:
+        The histogram shows the distribution of distances between detected regions:
         
-        - X ekseni bölge çiftleri arasındaki mesafeyi gösterir
-        - Y ekseni her mesafenin ne sıklıkta görüldüğünü gösterir
-        - Tepeler yaygın aralık örüntülerini gösterir
+        - X-axis shows the distance between pairs of regions
+        - Y-axis shows how frequently each distance occurs
+        - Peaks indicate common spacing patterns
         
-        Bu analiz şunlarda yardımcı olur:
-        - Uzamsal ilişkileri anlama
-        - Tipik aralık örüntülerini belirleme
-        - Olağandışı konumlandırmaları tespit etme
+        This analysis helps in:
+        - Understanding spatial relationships
+        - Identifying typical spacing patterns
+        - Detecting unusual positioning
         """
     }
 }
@@ -319,7 +319,7 @@ if uploaded_file is not None:
         with st.spinner(texts['loading']):
             results = model.predict(img_array, conf=0.25)
             
-            # Debug için sın��f isimlerini kontrol et
+            # Debug için sınıf isimlerini kontrol et
             st.write("Model Sınıfları:", results[0].names)
             
             # Create Plotly figure
@@ -328,15 +328,15 @@ if uploaded_file is not None:
             # Add image as background
             fig.add_trace(go.Image(z=img_array))
 
-            # Define color palette
+            # Define color palette - Daha belirgin ve kontrast renkler
             colors = [
                 '#FF0000',  # Kırmızı
-                '#FFA500',  # Turuncu
-                '#FFFF00',  # Sarı
                 '#00FF00',  # Yeşil
-                '#00FFFF',  # Cyan
                 '#0000FF',  # Mavi
-                '#800080'   # Mor
+                '#FFA500',  # Turuncu
+                '#800080',  # Mor
+                '#00FFFF',  # Cyan
+                '#FFD700',  # Altın
             ]
 
             # Add detected areas with smooth shapes
@@ -360,40 +360,64 @@ if uploaded_file is not None:
                     # Renk seç
                     color = colors[i % len(colors)]
                     
-                    # Rengin parlaklığını kontrol et ve yazı rengini belirle
-                    # Sarı ve açık renkler için siyah, koyu renkler için beyaz yazı
-                    text_color = 'black' if color in ['#FFFF00', '#00FFFF'] else 'white'
-                    
-                    # Yumuşak kenarlı elips ekle
+                    # Çerçeve ve etiket ekle
                     fig.add_trace(go.Scatter(
                         x=x,
                         y=y,
                         fill="toself",
                         fillcolor=color,
-                        line=dict(color=color),
-                        opacity=0.5,
+                        line=dict(color=color, width=2),  # Çerçeve kalınlığını artır
+                        opacity=0.3,  # Opaklığı azalt
                         name=label,
-                        showlegend=False,
+                        showlegend=True,  # Göstergeyi aktifleştir
                         hoverinfo='text',
                         hovertext=f"{label}<br>Güven: {conf:.2%}",
                         hoverlabel=dict(
                             bgcolor=color,
-                            font=dict(color=text_color)
+                            font=dict(color='white', size=14)  # Yazı boyutunu artır
                         )
                     ))
+                    
+                    # Etiket ekle
+                    fig.add_annotation(
+                        x=cx,
+                        y=cy,
+                        text=f"{label}<br>{conf:.2%}",
+                        showarrow=False,
+                        font=dict(
+                            color='white',
+                            size=12,
+                            weight='bold'
+                        ),
+                        bgcolor=color,
+                        opacity=0.8,
+                        bordercolor=color,
+                        borderwidth=2,
+                        borderpad=4,
+                        align='center'
+                    )
 
             # Update layout
             fig.update_layout(
-                showlegend=False,
+                showlegend=True,  # Göstergeyi göster
+                legend=dict(
+                    yanchor="top",
+                    y=0.99,
+                    xanchor="left",
+                    x=0.01,
+                    bgcolor='rgba(0,0,0,0.5)',
+                    font=dict(color='white', size=12)
+                ),
                 margin=dict(l=0, r=0, t=0, b=0),
                 xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                 yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                 plot_bgcolor='black',
                 paper_bgcolor='black',
-                width=None,  # Otomatik genişlik için None
+                width=None,
                 height=600,
                 hoverlabel=dict(
-                    namelength=-1
+                    namelength=-1,
+                    font=dict(size=14)
                 ),
                 hovermode='closest'
             )

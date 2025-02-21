@@ -271,6 +271,30 @@ selected_language = st.sidebar.selectbox(
 # Seçilen dile göre metinleri al
 texts = TEXTS[selected_language]
 
+# Model yükleme fonksiyonu
+def load_model(model_path):
+    if not os.path.exists(model_path):
+        st.sidebar.error(f"Model dosyası bulunamadı: {model_path}")
+        return None
+    
+    try:
+        # YOLO modeli yükleme
+        model = YOLO(model_path)
+        file_size = os.path.getsize(model_path) / (1024 * 1024)  # MB cinsinden
+        st.sidebar.success(f"YOLO modeli başarıyla yüklendi! (Boyut: {file_size:.2f} MB)")
+        return model
+    except Exception as e:
+        st.sidebar.error(f"Model yüklenirken hata oluştu: {str(e)}")
+        return None
+
+# Model yükleme
+MODEL_PATH = "weights/best.pt"
+model = load_model(MODEL_PATH)
+
+if model is None:
+    st.error("Model yüklenemedi. Lütfen model dosyasını kontrol edin.")
+    st.stop()
+
 # Demo görsel seçimi için radio butonları
 st.sidebar.markdown("---")
 st.sidebar.subheader("Demo Görseller" if selected_language == "Türkçe" else "Demo Images")

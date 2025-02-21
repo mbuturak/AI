@@ -271,38 +271,42 @@ selected_language = st.sidebar.selectbox(
 # Seçilen dile göre metinleri al
 texts = TEXTS[selected_language]
 
-# Model yükleme fonksiyonu
-def load_model(model_path):
-    if not os.path.exists(model_path):
-        st.sidebar.error(f"Model dosyası bulunamadı: {model_path}")
-        return None
-    
+# Demo görsel seçimi için radio butonları
+st.sidebar.markdown("---")
+st.sidebar.subheader("Demo Görseller" if selected_language == "Türkçe" else "Demo Images")
+
+demo_images = {
+    "Demo 1": "images/demo1.jpg",
+    "Demo 2": "images/demo2.jpg", 
+    "Demo 3": "images/demo3.jpg",
+    "Demo 4": "images/demo4.jpg"
+}
+
+selected_demo = st.sidebar.radio(
+    "Demo görsel seçin" if selected_language == "Türkçe" else "Select demo image",
+    list(demo_images.keys()),
+    index=None
+)
+
+# Görsel yükleme bölümü
+if selected_demo:
+    # Demo görsel seçildiğinde
+    image_path = demo_images[selected_demo]
+    if os.path.exists(image_path):
+        image = Image.open(image_path)
+        uploaded_file = None  # Reset uploaded file
+    else:
+        st.error("Demo görsel bulunamadı!" if selected_language == "Türkçe" else "Demo image not found!")
+else:
+    # Normal dosya yükleme
+    uploaded_file = st.file_uploader(texts['upload'], type=["jpg", "jpeg", "png"])
+
+# Görsel işleme bölümü
+if uploaded_file is not None or selected_demo:
     try:
-        # YOLO modeli yükleme
-        model = YOLO(model_path)  # 'version' parametresi kaldırıldı
-        file_size = os.path.getsize(model_path) / (1024 * 1024)  # MB cinsinden
-        st.sidebar.success(f"YOLO modeli başarıyla yüklendi! (Boyut: {file_size:.2f} MB)")
-        return model
-    except Exception as e:
-        st.sidebar.error(f"Model yüklenirken hata oluştu: {str(e)}")
-        return None
-
-
-# Model yükleme
-MODEL_PATH = "weights/best.pt"
-model = load_model(MODEL_PATH)
-
-if model is None:
-    st.error("Model yüklenemedi. Lütfen model dosyasını kontrol edin.")
-    st.stop()
-
-# Image upload
-uploaded_file = st.file_uploader(texts['upload'], type=["jpg", "jpeg", "png"])
-
-if uploaded_file is not None:
-    try:
-        # Load and preprocess image
-        image = Image.open(uploaded_file)
+        # Görüntüyü yükle
+        if uploaded_file is not None:
+            image = Image.open(uploaded_file)
         img_array = np.array(image)
         
         # Convert to RGB if needed

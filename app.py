@@ -296,455 +296,923 @@ if model is None:
     st.error("Model yüklenemedi. Lütfen model dosyasını kontrol edin.")
     st.stop()
 
-# Image upload
-uploaded_file = st.file_uploader(texts['upload'], type=["jpg", "jpeg", "png"])
+# Demo görüntü seçimi için fonksiyon
+def load_demo_image(image_path):
+    return Image.open(image_path)
 
-if uploaded_file is not None:
-    try:
-        # Load and preprocess image
-        image = Image.open(uploaded_file)
-        img_array = np.array(image)
+# Sidebar'a demo görüntü seçimi ekle
+st.sidebar.markdown("---")
+st.sidebar.subheader("Demo Görseller" if selected_language == "Türkçe" else "Demo Images")
+
+# Demo görüntüleri listele
+demo_images = {
+    "Demo 1": "images/demo1.jpg",
+    "Demo 2": "images/demo2.jpg",
+    "Demo 3": "images/demo3.jpg",
+    "Demo 4": "images/demo4.jpg"
+}
+
+# Demo görüntü seçimi
+selected_demo = st.sidebar.radio(
+    "Demo Görsel Seç" if selected_language == "Türkçe" else "Select Demo Image",
+    list(demo_images.keys()),
+    index=None
+)
+
+# Kullanıcı yükleme veya demo seçimi
+if selected_demo:
+    # Demo görüntüyü yükle
+    image = load_demo_image(demo_images[selected_demo])
+    img_array = np.array(image)
+    
+    # Görüntü işleme kodları buradan devam eder...
+    # Convert to RGB if needed
+    if len(img_array.shape) == 2:  # Grayscale
+        img_array = cv2.cvtColor(img_array, cv2.COLOR_GRAY2RGB)
+    elif img_array.shape[2] == 4:  # RGBA
+        img_array = cv2.cvtColor(img_array, cv2.COLOR_RGBA2RGB)
+    
+    # Ensure image is in correct format
+    if img_array.dtype != np.uint8:
+        img_array = (img_array * 255).astype(np.uint8)
+    
+    # Perform detection
+    with st.spinner(texts['loading']):
+        results = model.predict(img_array, conf=0.25)
         
-        # Convert to RGB if needed
-        if len(img_array.shape) == 2:  # Grayscale
-            img_array = cv2.cvtColor(img_array, cv2.COLOR_GRAY2RGB)
-        elif img_array.shape[2] == 4:  # RGBA
-            img_array = cv2.cvtColor(img_array, cv2.COLOR_RGBA2RGB)
-        
-        # Ensure image is in correct format
-        if img_array.dtype != np.uint8:
-            img_array = (img_array * 255).astype(np.uint8)
-        
-        # Perform detection
-        with st.spinner(texts['loading']):
-            results = model.predict(img_array, conf=0.25)
-            
-                        # Debug için sınıf isimlerini kontrol et
-            st.write("Model Sınıfları:", results[0].names)
+        # Debug için sınıf isimlerini kontrol et
+        st.write("Model Sınıfları:", results[0].names)
 
-            # Create Plotly figure
-            fig = go.Figure()
+        # Create Plotly figure
+        fig = go.Figure()
 
-            # Add image as background
-            fig.add_trace(go.Image(z=img_array))
+        # Add image as background
+        fig.add_trace(go.Image(z=img_array))
 
-            # Define color palette - Daha belirgin ve kontrast renkler
-            colors = [
-                '#FF0000',  # Kırmızı
-                '#00FF00',  # Yeşil
-                '#0000FF',  # Mavi
-                '#FFA500',  # Turuncu
-                '#800080',  # Mor
-                '#00FFFF',  # Cyan
-                '#FFD700',  # Altın
-            ]
+        # Define color palette - Daha belirgin ve kontrast renkler
+        colors = [
+            '#FF0000',  # Kırmızı
+            '#00FF00',  # Yeşil
+            '#0000FF',  # Mavi
+            '#FFA500',  # Turuncu
+            '#800080',  # Mor
+            '#00FFFF',  # Cyan
+            '#FFD700',  # Altın
+        ]
 
-            # Add detected areas with custom shapes based on class
-            if len(results) > 0 and results[0].boxes is not None:
-                boxes = results[0].boxes
+        # Add detected areas with custom shapes based on class
+        if len(results) > 0 and results[0].boxes is not None:
+            boxes = results[0].boxes
 
-                # Her tespitin bölge ismini ekle (sol üst köşe)
-                region_names = set()
-                for i, box in enumerate(boxes):
-                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                    conf = float(box.conf)
-                    cls = int(box.cls)
-                    full_label = results[0].names[cls]
-                    base_label = full_label.split('_')[0].upper()
-                    if base_label in ["HIP", "SHOULDER"]:
-                        region_names.add(base_label)
+            # Her tespitin bölge ismini ekle (sol üst köşe)
+            region_names = set()
+            for i, box in enumerate(boxes):
+                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                conf = float(box.conf)
+                cls = int(box.cls)
+                full_label = results[0].names[cls]
+                base_label = full_label.split('_')[0].upper()
+                if base_label in ["HIP", "SHOULDER"]:
+                    region_names.add(base_label)
 
-                    # Bölge ismini görüntüde göster
-                    cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
-                    if "true" in full_label.lower():  # Yalnızca "true" tespitler için çizim
-                        width = x2 - x1
-                        height = y2 - y1
-                        color = colors[i % len(colors)]
+                # Bölge ismini görüntüde göster
+                cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+                if "true" in full_label.lower():  # Yalnızca "true" tespitler için çizim
+                    width = x2 - x1
+                    height = y2 - y1
+                    color = colors[i % len(colors)]
 
-                        # Path çizimi için noktalar
-                        points = np.array([
-                            [x1, y1],  # Sol üst
-                            [cx, y1 - height * 0.1],  # Üst orta
-                            [x2, y1],  # Sağ üst
-                            [x2 + width * 0.1, cy],  # Sağ orta
-                            [x2, y2],  # Sağ alt
-                            [cx, y2 + height * 0.1],  # Alt orta
-                            [x1, y2],  # Sol alt
-                            [x1 - width * 0.1, cy],  # Sol orta
-                            [x1, y1]  # Başlangıç noktasına dön
-                        ])
+                    # Path çizimi için noktalar
+                    points = np.array([
+                        [x1, y1],  # Sol üst
+                        [cx, y1 - height * 0.1],  # Üst orta
+                        [x2, y1],  # Sağ üst
+                        [x2 + width * 0.1, cy],  # Sağ orta
+                        [x2, y2],  # Sağ alt
+                        [cx, y2 + height * 0.1],  # Alt orta
+                        [x1, y2],  # Sol alt
+                        [x1 - width * 0.1, cy],  # Sol orta
+                        [x1, y1]  # Başlangıç noktasına dön
+                    ])
 
-                        # Path çizimi
-                        fig.add_trace(go.Scatter(
-                            x=points[:, 0],
-                            y=points[:, 1],
-                            mode='lines',
-                            line=dict(color=color, width=3),
-                            name=base_label,
-                            showlegend=True,
-                            hoverinfo='text',
-                            hovertext=f"{base_label}<br>Güven: {conf:.2%}" if selected_language == "Türkçe"
-                            else f"{base_label}<br>Confidence: {conf:.2%}"
-                        ))
+                    # Path çizimi
+                    fig.add_trace(go.Scatter(
+                        x=points[:, 0],
+                        y=points[:, 1],
+                        mode='lines',
+                        line=dict(color=color, width=3),
+                        name=base_label,
+                        showlegend=True,
+                        hoverinfo='text',
+                        hovertext=f"{base_label}<br>Güven: {conf:.2%}" if selected_language == "Türkçe"
+                        else f"{base_label}<br>Confidence: {conf:.2%}"
+                    ))
 
-                    # Etiket ekle (her zaman bölge ismi göster)
-                    fig.add_annotation(
-                        x=cx,
-                        y=y1 - 10,
-                        text=base_label,
-                        showarrow=False,
-                        font=dict(
-                            color='white',
-                            size=12,
-                            weight='bold'
-                        ),
-                        bgcolor=color if "true" in full_label.lower() else 'rgba(0, 0, 0, 0.7)',
-                        opacity=0.7,
-                        bordercolor=color if "true" in full_label.lower() else 'white',
-                        borderwidth=2,
-                        borderpad=4,
-                        align='center'
-                    )
-
-                # Sol üst köşede tüm bölge isimlerini listele
+                # Etiket ekle (her zaman bölge ismi göster)
                 fig.add_annotation(
-                    x=50,
-                    y=50,
-                    text=f"Bölgeler: {', '.join(sorted(region_names))}" if selected_language == "Türkçe" 
-                    else f"Regions: {', '.join(sorted(region_names))}",
+                    x=cx,
+                    y=y1 - 10,
+                    text=base_label,
                     showarrow=False,
                     font=dict(
                         color='white',
-                        size=14,
+                        size=12,
                         weight='bold'
                     ),
-                    bgcolor='rgba(0, 0, 0, 0.7)',
-                    bordercolor='white',
+                    bgcolor=color if "true" in full_label.lower() else 'rgba(0, 0, 0, 0.7)',
+                    opacity=0.7,
+                    bordercolor=color if "true" in full_label.lower() else 'white',
                     borderwidth=2,
                     borderpad=4,
-                    align='left'
+                    align='center'
                 )
 
-            # Update layout with improved legend
-            fig.update_layout(
-                showlegend=True,
-                legend=dict(
-                    yanchor="top",
-                    y=0.99,
-                    xanchor="left",
-                    x=0.01,
-                    bgcolor='rgba(0,0,0,0.5)',
-                    font=dict(color='white', size=12),
-                    bordercolor='white',
-                    borderwidth=1,
-                    groupclick="toggleitem"  # Her öğeyi bağımsız açıp kapatma
+            # Sol üst köşede tüm bölge isimlerini listele
+            fig.add_annotation(
+                x=50,
+                y=50,
+                text=f"Bölgeler: {', '.join(sorted(region_names))}" if selected_language == "Türkçe" 
+                else f"Regions: {', '.join(sorted(region_names))}",
+                showarrow=False,
+                font=dict(
+                    color='white',
+                    size=14,
+                    weight='bold'
                 ),
+                bgcolor='rgba(0, 0, 0, 0.7)',
+                bordercolor='white',
+                borderwidth=2,
+                borderpad=4,
+                align='left'
+            )
+
+        # Update layout with improved legend
+        fig.update_layout(
+            showlegend=True,
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01,
+                bgcolor='rgba(0,0,0,0.5)',
+                font=dict(color='white', size=12),
+                bordercolor='white',
+                borderwidth=1,
+                groupclick="toggleitem"  # Her öğeyi bağımsız açıp kapatma
+            ),
+            margin=dict(l=0, r=0, t=0, b=0),
+            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            plot_bgcolor='black',
+            paper_bgcolor='black',
+            width=None,
+            height=600,
+            hoverlabel=dict(
+                namelength=-1,
+                font=dict(size=14)
+            ),
+            hovermode='closest'
+        )
+
+        
+        # X-ray görüntülerini yan yana göster
+        col_img1, col_img2 = st.columns(2)
+        
+        with col_img1:
+            st.markdown("**Original X-Ray**" if selected_language == "English" else "**Orijinal X-Ray**")
+            # Orijinal görüntüy Plotly ile göster
+            orig_fig = go.Figure()
+            orig_fig.add_trace(go.Image(z=img_array))
+            orig_fig.update_layout(
                 margin=dict(l=0, r=0, t=0, b=0),
                 xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                 yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                 plot_bgcolor='black',
                 paper_bgcolor='black',
-                width=None,
-                height=600,
-                hoverlabel=dict(
-                    namelength=-1,
-                    font=dict(size=14)
-                ),
-                hovermode='closest'
+                width=None,  # Otomatik genişlik için None
+                height=600
             )
+            st.plotly_chart(orig_fig, use_container_width=True)
+        
+        with col_img2:
+            st.markdown("**Detected Regions**" if selected_language == "English" else "**Tespit Edilen Bölgeler**")
+            st.plotly_chart(fig, use_container_width=True)
 
+        # Analiz bölümü
+        st.markdown("---")
+        
+        # Dağılım analizi için iki kolon oluştur
+        col1, col2 = st.columns([2, 1])  # Sol taraf daha geniş
+        
+        with col1:
+            st.subheader(texts['distribution_title'])
             
-            # X-ray görüntülerini yan yana göster
-            col_img1, col_img2 = st.columns(2)
+            # Bölgelerin sayısını hesapla
+            class_counts = {}
+            for box in boxes:
+                cls = int(box.cls)
+                # Sadece bölge ismini al (true/false kısmını kaldır)
+                label = results[0].names[cls].split('_')[0].upper()
+                class_counts[label] = class_counts.get(label, 0) + 1
+
+            # Pasta grafik
+            pie_fig = go.Figure(data=[
+                go.Pie(
+                    labels=list(class_counts.keys()),
+                    values=list(class_counts.values()),
+                    hole=.3,
+                    textinfo='label+value+percent',
+                    texttemplate='%{label}<br>%{value} adet<br>(%{percent})',
+                    marker=dict(colors=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']),
+                    textfont=dict(size=14),
+                    textposition='inside',
+                    insidetextorientation='radial',
+                    hoverinfo='label+value+percent',
+                    hoverlabel=dict(font=dict(size=14, color='white')),
+                    rotation=90
+                )
+            ])
+            pie_fig.update_layout(
+                margin=dict(l=20, r=20, t=50, b=20),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='white', size=14),
+                title=dict(
+                    text="Bölge Dağılımı" if selected_language == "Türkçe" else "Region Distribution",
+                    font=dict(color='white', size=16),
+                    y=0.95
+                ),
+                height=600,
+                showlegend=False
+            )
+            st.plotly_chart(pie_fig, use_container_width=True)
+        
+        with col2:
+            st.subheader(texts['analysis_title'])
+            st.markdown(texts['distribution_text'])
+
+        # Bölgesel yoğunluk analizi
+        st.markdown("---")
+        st.subheader("Bölgesel Yoğunluk Analizi" if selected_language == "Türkçe" else "Regional Density Analysis")
+
+        # Tespit edilen bölgelerin merkez noktalarını topla
+        centers_x = []
+        centers_y = []
+        for box in boxes:
+            x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+            centers_x.append((x1 + x2) / 2)
+            centers_y.append((y1 + y2) / 2)
+
+        # Yoğunluk haritası oluştur
+        density_fig = go.Figure(data=go.Histogram2dContour(
+            x=centers_x,
+            y=centers_y,
+            colorscale='Viridis',
+            nbinsx=20,
+            nbinsy=20,
+            showscale=True,
+            colorbar=dict(
+                title=dict(
+                    text="Yoğunluk" if selected_language == "Türkçe" else "Density",
+                    side="right"
+                ),
+                thickness=20,
+                len=0.9
+            ),
+            hovertemplate=("Yoğunluk: %{z}<extra></extra>" if selected_language == "Türkçe" 
+                         else "Density: %{z}<extra></extra>")
+        ))
+        
+        # X-ray görüntüsünü ekle
+        density_fig.add_trace(go.Image(
+            z=img_array, 
+            opacity=0.5,
+            hovertemplate="X-Ray<extra></extra>"
+        ))
+
+        # Tespit edilen bölgeleri ekle
+        for box, label in zip(boxes, [results[0].names[int(box.cls)] for box in boxes]):
+            x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+            cx = (x1 + x2) / 2
+            cy = (y1 + y2) / 2
             
-            with col_img1:
-                st.markdown("**Original X-Ray**" if selected_language == "English" else "**Orijinal X-Ray**")
-                # Orijinal görüntüy Plotly ile göster
-                orig_fig = go.Figure()
-                orig_fig.add_trace(go.Image(z=img_array))
-                orig_fig.update_layout(
+            density_fig.add_trace(go.Scatter(
+                x=[cx],
+                y=[cy],
+                mode='markers',
+                marker=dict(size=10, opacity=0),
+                hoverinfo='text',
+                hovertext=label,
+                showlegend=False
+            ))
+        
+        density_fig.update_layout(
+            title=dict(
+                text="Tespit Yoğunluğu" if selected_language == "Türkçe" else "Detection Density",
+                font=dict(color='white', size=16),
+                y=0.95
+            ),
+            paper_bgcolor='black',
+            plot_bgcolor='black',
+            height=700,  # Yüksekliği daha da artır
+            margin=dict(l=20, r=50, t=50, b=20),
+            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+        )
+        st.plotly_chart(density_fig, use_container_width=True)
+        
+        # Açıklamayı altına ekle
+        st.markdown(texts['density_text'])
+
+        # Boyut analizi bölümü
+        st.markdown("---")
+        st.subheader("Boyut Analizi" if selected_language == "Türkçe" else "Size Analysis")
+
+        # Bölgelerin boyutlarını hesapla
+        sizes = []
+        size_labels = []
+        for box in boxes:
+            x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+            width = x2 - x1
+            height = y2 - y1
+            area = width * height
+            sizes.append(area)
+            # Sadece bölge ismini al
+            size_labels.append(results[0].names[int(box.cls)].split('_')[0].upper())
+
+        # Kutu grafiği oluştur
+        box_fig = go.Figure()
+        for label in set(size_labels):
+            label_sizes = [size for size, l in zip(sizes, size_labels) if l == label]
+            box_fig.add_trace(go.Box(
+                y=label_sizes,
+                name=label,
+                boxpoints='all',
+                jitter=0.3,
+                pointpos=-1.8
+            ))
+
+        box_fig.update_layout(
+            title="Bölge Boyutları Karşılaştırması" if selected_language == "Türkçe" else "Region Size Comparison",
+            yaxis_title="Alan" if selected_language == "Türkçe" else "Area",
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white'),
+            height=400
+        )
+        st.plotly_chart(box_fig, use_container_width=True)
+        st.markdown(texts['size_text'])
+
+        # Güven skoru analizi
+        st.markdown("---")
+        st.subheader("Güven Skoru Analizi" if selected_language == "Türkçe" else "Confidence Score Analysis")
+
+        conf_data = []
+        conf_labels = []
+        for box in boxes:
+            conf_data.append(float(box.conf))
+            # Sadece bölge ismini al
+            conf_labels.append(results[0].names[int(box.cls)].split('_')[0].upper())
+
+        conf_fig = go.Figure()
+        for label in set(conf_labels):
+            label_confs = [conf for conf, l in zip(conf_data, conf_labels) if l == label]
+            conf_fig.add_trace(go.Violin(
+                y=label_confs,
+                name=label,
+                box_visible=True,
+                meanline_visible=True
+            ))
+
+        conf_fig.update_layout(
+            title="Güven Skorları Dağılımı" if selected_language == "Türkçe" else "Confidence Score Distribution",
+            yaxis_title="Güven Skoru" if selected_language == "Türkçe" else "Confidence Score",
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white'),
+            height=400
+        )
+        st.plotly_chart(conf_fig, use_container_width=True)
+        st.markdown(texts['confidence_text'])
+
+        # Simetri analizi
+        st.markdown("---")
+        st.subheader("Simetri Analizi" if selected_language == "Türkçe" else "Symmetry Analysis")
+
+        # Görüntüyü dikey olarak ikiye böl
+        image_center = img_array.shape[1] // 2
+        left_detections = 0
+        right_detections = 0
+
+        for box in boxes:
+            x1, x2 = box.xyxy[0].cpu().numpy()[[0, 2]]
+            center = (x1 + x2) / 2
+            if center < image_center:
+                left_detections += 1
+            else:
+                right_detections += 1
+
+        # Simetri grafiği
+        symmetry_fig = go.Figure(data=[
+            go.Bar(
+                x=['Sol', 'Sağ'] if selected_language == "Türkçe" else ['Left', 'Right'],
+                y=[left_detections, right_detections],
+                marker_color=['#1f77b4', '#ff7f0e']
+            )
+        ])
+        symmetry_fig.update_layout(
+            title="Sol-Sağ Dağılımı" if selected_language == "Türkçe" else "Left-Right Distribution",
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white'),
+            height=400
+        )
+        st.plotly_chart(symmetry_fig, use_container_width=True)
+        st.markdown(texts['symmetry_text'])
+
+        # Mesafe analizi
+        st.markdown("---")
+        st.subheader("Mesafe Analizi" if selected_language == "Türkçe" else "Distance Analysis")
+
+        distances = []
+        pair_labels = []
+        for i, box1 in enumerate(boxes):
+            for j, box2 in enumerate(boxes[i+1:], i+1):
+                x1, y1 = (box1.xyxy[0][0] + box1.xyxy[0][2])/2, (box1.xyxy[0][1] + box1.xyxy[0][3])/2
+                x2, y2 = (box2.xyxy[0][0] + box2.xyxy[0][2])/2, (box2.xyxy[0][1] + box2.xyxy[0][3])/2
+                distance = np.sqrt((x2-x1)**2 + (y2-y1)**2)
+                distances.append(distance)
+                # Sadece bölge isimlerini al
+                label1 = results[0].names[int(box1.cls)].split('_')[0].upper()
+                label2 = results[0].names[int(box2.cls)].split('_')[0].upper()
+                pair_labels.append(f"{label1} - {label2}")
+
+        dist_fig = go.Figure(data=go.Histogram(
+            x=distances,
+            nbinsx=30,
+            opacity=0.7
+        ))
+        dist_fig.update_layout(
+            title="Bölgeler Arası Mesafe Dağılımı" if selected_language == "Türkçe" else "Inter-Region Distance Distribution",
+            xaxis_title="Mesafe" if selected_language == "Türkçe" else "Distance",
+            yaxis_title="Frekans" if selected_language == "Türkçe" else "Frequency",
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white'),
+            height=400
+        )
+        st.plotly_chart(dist_fig, use_container_width=True)
+        st.markdown(texts['distance_text'])
+
+else:
+    # Normal dosya yükleme alanı
+    uploaded_file = st.file_uploader(texts['upload'], type=["jpg", "jpeg", "png"])
+    
+    if uploaded_file is not None:
+        try:
+            image = Image.open(uploaded_file)
+            img_array = np.array(image)
+            
+            # Convert to RGB if needed
+            if len(img_array.shape) == 2:  # Grayscale
+                img_array = cv2.cvtColor(img_array, cv2.COLOR_GRAY2RGB)
+            elif img_array.shape[2] == 4:  # RGBA
+                img_array = cv2.cvtColor(img_array, cv2.COLOR_RGBA2RGB)
+            
+            # Ensure image is in correct format
+            if img_array.dtype != np.uint8:
+                img_array = (img_array * 255).astype(np.uint8)
+            
+            # Perform detection
+            with st.spinner(texts['loading']):
+                results = model.predict(img_array, conf=0.25)
+                
+                # Debug için sınıf isimlerini kontrol et
+                st.write("Model Sınıfları:", results[0].names)
+
+                # Create Plotly figure
+                fig = go.Figure()
+
+                # Add image as background
+                fig.add_trace(go.Image(z=img_array))
+
+                # Define color palette - Daha belirgin ve kontrast renkler
+                colors = [
+                    '#FF0000',  # Kırmızı
+                    '#00FF00',  # Yeşil
+                    '#0000FF',  # Mavi
+                    '#FFA500',  # Turuncu
+                    '#800080',  # Mor
+                    '#00FFFF',  # Cyan
+                    '#FFD700',  # Altın
+                ]
+
+                # Add detected areas with custom shapes based on class
+                if len(results) > 0 and results[0].boxes is not None:
+                    boxes = results[0].boxes
+
+                    # Her tespitin bölge ismini ekle (sol üst köşe)
+                    region_names = set()
+                    for i, box in enumerate(boxes):
+                        x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                        conf = float(box.conf)
+                        cls = int(box.cls)
+                        full_label = results[0].names[cls]
+                        base_label = full_label.split('_')[0].upper()
+                        if base_label in ["HIP", "SHOULDER"]:
+                            region_names.add(base_label)
+
+                        # Bölge ismini görüntüde göster
+                        cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+                        if "true" in full_label.lower():  # Yalnızca "true" tespitler için çizim
+                            width = x2 - x1
+                            height = y2 - y1
+                            color = colors[i % len(colors)]
+
+                            # Path çizimi için noktalar
+                            points = np.array([
+                                [x1, y1],  # Sol üst
+                                [cx, y1 - height * 0.1],  # Üst orta
+                                [x2, y1],  # Sağ üst
+                                [x2 + width * 0.1, cy],  # Sağ orta
+                                [x2, y2],  # Sağ alt
+                                [cx, y2 + height * 0.1],  # Alt orta
+                                [x1, y2],  # Sol alt
+                                [x1 - width * 0.1, cy],  # Sol orta
+                                [x1, y1]  # Başlangıç noktasına dön
+                            ])
+
+                            # Path çizimi
+                            fig.add_trace(go.Scatter(
+                                x=points[:, 0],
+                                y=points[:, 1],
+                                mode='lines',
+                                line=dict(color=color, width=3),
+                                name=base_label,
+                                showlegend=True,
+                                hoverinfo='text',
+                                hovertext=f"{base_label}<br>Güven: {conf:.2%}" if selected_language == "Türkçe"
+                                else f"{base_label}<br>Confidence: {conf:.2%}"
+                            ))
+
+                        # Etiket ekle (her zaman bölge ismi göster)
+                        fig.add_annotation(
+                            x=cx,
+                            y=y1 - 10,
+                            text=base_label,
+                            showarrow=False,
+                            font=dict(
+                                color='white',
+                                size=12,
+                                weight='bold'
+                            ),
+                            bgcolor=color if "true" in full_label.lower() else 'rgba(0, 0, 0, 0.7)',
+                            opacity=0.7,
+                            bordercolor=color if "true" in full_label.lower() else 'white',
+                            borderwidth=2,
+                            borderpad=4,
+                            align='center'
+                        )
+
+                    # Sol üst köşede tüm bölge isimlerini listele
+                    fig.add_annotation(
+                        x=50,
+                        y=50,
+                        text=f"Bölgeler: {', '.join(sorted(region_names))}" if selected_language == "Türkçe" 
+                        else f"Regions: {', '.join(sorted(region_names))}",
+                        showarrow=False,
+                        font=dict(
+                            color='white',
+                            size=14,
+                            weight='bold'
+                        ),
+                        bgcolor='rgba(0, 0, 0, 0.7)',
+                        bordercolor='white',
+                        borderwidth=2,
+                        borderpad=4,
+                        align='left'
+                    )
+
+                # Update layout with improved legend
+                fig.update_layout(
+                    showlegend=True,
+                    legend=dict(
+                        yanchor="top",
+                        y=0.99,
+                        xanchor="left",
+                        x=0.01,
+                        bgcolor='rgba(0,0,0,0.5)',
+                        font=dict(color='white', size=12),
+                        bordercolor='white',
+                        borderwidth=1,
+                        groupclick="toggleitem"  # Her öğeyi bağımsız açıp kapatma
+                    ),
                     margin=dict(l=0, r=0, t=0, b=0),
                     xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                     yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                     plot_bgcolor='black',
                     paper_bgcolor='black',
-                    width=None,  # Otomatik genişlik için None
-                    height=600
+                    width=None,
+                    height=600,
+                    hoverlabel=dict(
+                        namelength=-1,
+                        font=dict(size=14)
+                    ),
+                    hovermode='closest'
                 )
-                st.plotly_chart(orig_fig, use_container_width=True)
-            
-            with col_img2:
-                st.markdown("**Detected Regions**" if selected_language == "English" else "**Tespit Edilen Bölgeler**")
-                st.plotly_chart(fig, use_container_width=True)
 
-            # Analiz bölümü
-            st.markdown("---")
-            
-            # Dağılım analizi için iki kolon oluştur
-            col1, col2 = st.columns([2, 1])  # Sol taraf daha geniş
-            
-            with col1:
-                st.subheader(texts['distribution_title'])
                 
-                # Bölgelerin sayısını hesapla
-                class_counts = {}
-                for box in boxes:
-                    cls = int(box.cls)
-                    # Sadece bölge ismini al (true/false kısmını kaldır)
-                    label = results[0].names[cls].split('_')[0].upper()
-                    class_counts[label] = class_counts.get(label, 0) + 1
-
-                # Pasta grafik
-                pie_fig = go.Figure(data=[
-                    go.Pie(
-                        labels=list(class_counts.keys()),
-                        values=list(class_counts.values()),
-                        hole=.3,
-                        textinfo='label+value+percent',
-                        texttemplate='%{label}<br>%{value} adet<br>(%{percent})',
-                        marker=dict(colors=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']),
-                        textfont=dict(size=14),
-                        textposition='inside',
-                        insidetextorientation='radial',
-                        hoverinfo='label+value+percent',
-                        hoverlabel=dict(font=dict(size=14, color='white')),
-                        rotation=90
+                # X-ray görüntülerini yan yana göster
+                col_img1, col_img2 = st.columns(2)
+                
+                with col_img1:
+                    st.markdown("**Original X-Ray**" if selected_language == "English" else "**Orijinal X-Ray**")
+                    # Orijinal görüntüy Plotly ile göster
+                    orig_fig = go.Figure()
+                    orig_fig.add_trace(go.Image(z=img_array))
+                    orig_fig.update_layout(
+                        margin=dict(l=0, r=0, t=0, b=0),
+                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        plot_bgcolor='black',
+                        paper_bgcolor='black',
+                        width=None,  # Otomatik genişlik için None
+                        height=600
                     )
-                ])
-                pie_fig.update_layout(
-                    margin=dict(l=20, r=20, t=50, b=20),
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='white', size=14),
+                    st.plotly_chart(orig_fig, use_container_width=True)
+                
+                with col_img2:
+                    st.markdown("**Detected Regions**" if selected_language == "English" else "**Tespit Edilen Bölgeler**")
+                    st.plotly_chart(fig, use_container_width=True)
+
+                # Analiz bölümü
+                st.markdown("---")
+                
+                # Dağılım analizi için iki kolon oluştur
+                col1, col2 = st.columns([2, 1])  # Sol taraf daha geniş
+                
+                with col1:
+                    st.subheader(texts['distribution_title'])
+                    
+                    # Bölgelerin sayısını hesapla
+                    class_counts = {}
+                    for box in boxes:
+                        cls = int(box.cls)
+                        # Sadece bölge ismini al (true/false kısmını kaldır)
+                        label = results[0].names[cls].split('_')[0].upper()
+                        class_counts[label] = class_counts.get(label, 0) + 1
+
+                    # Pasta grafik
+                    pie_fig = go.Figure(data=[
+                        go.Pie(
+                            labels=list(class_counts.keys()),
+                            values=list(class_counts.values()),
+                            hole=.3,
+                            textinfo='label+value+percent',
+                            texttemplate='%{label}<br>%{value} adet<br>(%{percent})',
+                            marker=dict(colors=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']),
+                            textfont=dict(size=14),
+                            textposition='inside',
+                            insidetextorientation='radial',
+                            hoverinfo='label+value+percent',
+                            hoverlabel=dict(font=dict(size=14, color='white')),
+                            rotation=90
+                        )
+                    ])
+                    pie_fig.update_layout(
+                        margin=dict(l=20, r=20, t=50, b=20),
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        font=dict(color='white', size=14),
+                        title=dict(
+                            text="Bölge Dağılımı" if selected_language == "Türkçe" else "Region Distribution",
+                            font=dict(color='white', size=16),
+                            y=0.95
+                        ),
+                        height=600,
+                        showlegend=False
+                    )
+                    st.plotly_chart(pie_fig, use_container_width=True)
+                
+                with col2:
+                    st.subheader(texts['analysis_title'])
+                    st.markdown(texts['distribution_text'])
+
+                # Bölgesel yoğunluk analizi
+                st.markdown("---")
+                st.subheader("Bölgesel Yoğunluk Analizi" if selected_language == "Türkçe" else "Regional Density Analysis")
+
+                # Tespit edilen bölgelerin merkez noktalarını topla
+                centers_x = []
+                centers_y = []
+                for box in boxes:
+                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                    centers_x.append((x1 + x2) / 2)
+                    centers_y.append((y1 + y2) / 2)
+
+                # Yoğunluk haritası oluştur
+                density_fig = go.Figure(data=go.Histogram2dContour(
+                    x=centers_x,
+                    y=centers_y,
+                    colorscale='Viridis',
+                    nbinsx=20,
+                    nbinsy=20,
+                    showscale=True,
+                    colorbar=dict(
+                        title=dict(
+                            text="Yoğunluk" if selected_language == "Türkçe" else "Density",
+                            side="right"
+                        ),
+                        thickness=20,
+                        len=0.9
+                    ),
+                    hovertemplate=("Yoğunluk: %{z}<extra></extra>" if selected_language == "Türkçe" 
+                                 else "Density: %{z}<extra></extra>")
+                ))
+                
+                # X-ray görüntüsünü ekle
+                density_fig.add_trace(go.Image(
+                    z=img_array, 
+                    opacity=0.5,
+                    hovertemplate="X-Ray<extra></extra>"
+                ))
+
+                # Tespit edilen bölgeleri ekle
+                for box, label in zip(boxes, [results[0].names[int(box.cls)] for box in boxes]):
+                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                    cx = (x1 + x2) / 2
+                    cy = (y1 + y2) / 2
+                    
+                    density_fig.add_trace(go.Scatter(
+                        x=[cx],
+                        y=[cy],
+                        mode='markers',
+                        marker=dict(size=10, opacity=0),
+                        hoverinfo='text',
+                        hovertext=label,
+                        showlegend=False
+                    ))
+                
+                density_fig.update_layout(
                     title=dict(
-                        text="Bölge Dağılımı" if selected_language == "Türkçe" else "Region Distribution",
+                        text="Tespit Yoğunluğu" if selected_language == "Türkçe" else "Detection Density",
                         font=dict(color='white', size=16),
                         y=0.95
                     ),
-                    height=600,
-                    showlegend=False
+                    paper_bgcolor='black',
+                    plot_bgcolor='black',
+                    height=700,  # Yüksekliği daha da artır
+                    margin=dict(l=20, r=50, t=50, b=20),
+                    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
                 )
-                st.plotly_chart(pie_fig, use_container_width=True)
-            
-            with col2:
-                st.subheader(texts['analysis_title'])
-                st.markdown(texts['distribution_text'])
-
-            # Bölgesel yoğunluk analizi
-            st.markdown("---")
-            st.subheader("Bölgesel Yoğunluk Analizi" if selected_language == "Türkçe" else "Regional Density Analysis")
-
-            # Tespit edilen bölgelerin merkez noktalarını topla
-            centers_x = []
-            centers_y = []
-            for box in boxes:
-                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                centers_x.append((x1 + x2) / 2)
-                centers_y.append((y1 + y2) / 2)
-
-            # Yoğunluk haritası oluştur
-            density_fig = go.Figure(data=go.Histogram2dContour(
-                x=centers_x,
-                y=centers_y,
-                colorscale='Viridis',
-                nbinsx=20,
-                nbinsy=20,
-                showscale=True,
-                colorbar=dict(
-                    title=dict(
-                        text="Yoğunluk" if selected_language == "Türkçe" else "Density",
-                        side="right"
-                    ),
-                    thickness=20,
-                    len=0.9
-                ),
-                hovertemplate=("Yoğunluk: %{z}<extra></extra>" if selected_language == "Türkçe" 
-                             else "Density: %{z}<extra></extra>")
-            ))
-            
-            # X-ray görüntüsünü ekle
-            density_fig.add_trace(go.Image(
-                z=img_array, 
-                opacity=0.5,
-                hovertemplate="X-Ray<extra></extra>"
-            ))
-
-            # Tespit edilen bölgeleri ekle
-            for box, label in zip(boxes, [results[0].names[int(box.cls)] for box in boxes]):
-                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                cx = (x1 + x2) / 2
-                cy = (y1 + y2) / 2
+                st.plotly_chart(density_fig, use_container_width=True)
                 
-                density_fig.add_trace(go.Scatter(
-                    x=[cx],
-                    y=[cy],
-                    mode='markers',
-                    marker=dict(size=10, opacity=0),
-                    hoverinfo='text',
-                    hovertext=label,
-                    showlegend=False
-                ))
-            
-            density_fig.update_layout(
-                title=dict(
-                    text="Tespit Yoğunluğu" if selected_language == "Türkçe" else "Detection Density",
-                    font=dict(color='white', size=16),
-                    y=0.95
-                ),
-                paper_bgcolor='black',
-                plot_bgcolor='black',
-                height=700,  # Yüksekliği daha da artır
-                margin=dict(l=20, r=50, t=50, b=20),
-                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
-            )
-            st.plotly_chart(density_fig, use_container_width=True)
-            
-            # Açıklamayı altına ekle
-            st.markdown(texts['density_text'])
+                # Açıklamayı altına ekle
+                st.markdown(texts['density_text'])
 
-            # Boyut analizi bölümü
-            st.markdown("---")
-            st.subheader("Boyut Analizi" if selected_language == "Türkçe" else "Size Analysis")
+                # Boyut analizi bölümü
+                st.markdown("---")
+                st.subheader("Boyut Analizi" if selected_language == "Türkçe" else "Size Analysis")
 
-            # Bölgelerin boyutlarını hesapla
-            sizes = []
-            size_labels = []
-            for box in boxes:
-                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                width = x2 - x1
-                height = y2 - y1
-                area = width * height
-                sizes.append(area)
-                # Sadece bölge ismini al
-                size_labels.append(results[0].names[int(box.cls)].split('_')[0].upper())
+                # Bölgelerin boyutlarını hesapla
+                sizes = []
+                size_labels = []
+                for box in boxes:
+                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                    width = x2 - x1
+                    height = y2 - y1
+                    area = width * height
+                    sizes.append(area)
+                    # Sadece bölge ismini al
+                    size_labels.append(results[0].names[int(box.cls)].split('_')[0].upper())
 
-            # Kutu grafiği oluştur
-            box_fig = go.Figure()
-            for label in set(size_labels):
-                label_sizes = [size for size, l in zip(sizes, size_labels) if l == label]
-                box_fig.add_trace(go.Box(
-                    y=label_sizes,
-                    name=label,
-                    boxpoints='all',
-                    jitter=0.3,
-                    pointpos=-1.8
-                ))
+                # Kutu grafiği oluştur
+                box_fig = go.Figure()
+                for label in set(size_labels):
+                    label_sizes = [size for size, l in zip(sizes, size_labels) if l == label]
+                    box_fig.add_trace(go.Box(
+                        y=label_sizes,
+                        name=label,
+                        boxpoints='all',
+                        jitter=0.3,
+                        pointpos=-1.8
+                    ))
 
-            box_fig.update_layout(
-                title="Bölge Boyutları Karşılaştırması" if selected_language == "Türkçe" else "Region Size Comparison",
-                yaxis_title="Alan" if selected_language == "Türkçe" else "Area",
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='white'),
-                height=400
-            )
-            st.plotly_chart(box_fig, use_container_width=True)
-            st.markdown(texts['size_text'])
-
-            # Güven skoru analizi
-            st.markdown("---")
-            st.subheader("Güven Skoru Analizi" if selected_language == "Türkçe" else "Confidence Score Analysis")
-
-            conf_data = []
-            conf_labels = []
-            for box in boxes:
-                conf_data.append(float(box.conf))
-                # Sadece bölge ismini al
-                conf_labels.append(results[0].names[int(box.cls)].split('_')[0].upper())
-
-            conf_fig = go.Figure()
-            for label in set(conf_labels):
-                label_confs = [conf for conf, l in zip(conf_data, conf_labels) if l == label]
-                conf_fig.add_trace(go.Violin(
-                    y=label_confs,
-                    name=label,
-                    box_visible=True,
-                    meanline_visible=True
-                ))
-
-            conf_fig.update_layout(
-                title="Güven Skorları Dağılımı" if selected_language == "Türkçe" else "Confidence Score Distribution",
-                yaxis_title="Güven Skoru" if selected_language == "Türkçe" else "Confidence Score",
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='white'),
-                height=400
-            )
-            st.plotly_chart(conf_fig, use_container_width=True)
-            st.markdown(texts['confidence_text'])
-
-            # Simetri analizi
-            st.markdown("---")
-            st.subheader("Simetri Analizi" if selected_language == "Türkçe" else "Symmetry Analysis")
-
-            # Görüntüyü dikey olarak ikiye böl
-            image_center = img_array.shape[1] // 2
-            left_detections = 0
-            right_detections = 0
-
-            for box in boxes:
-                x1, x2 = box.xyxy[0].cpu().numpy()[[0, 2]]
-                center = (x1 + x2) / 2
-                if center < image_center:
-                    left_detections += 1
-                else:
-                    right_detections += 1
-
-            # Simetri grafiği
-            symmetry_fig = go.Figure(data=[
-                go.Bar(
-                    x=['Sol', 'Sağ'] if selected_language == "Türkçe" else ['Left', 'Right'],
-                    y=[left_detections, right_detections],
-                    marker_color=['#1f77b4', '#ff7f0e']
+                box_fig.update_layout(
+                    title="Bölge Boyutları Karşılaştırması" if selected_language == "Türkçe" else "Region Size Comparison",
+                    yaxis_title="Alan" if selected_language == "Türkçe" else "Area",
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='white'),
+                    height=400
                 )
-            ])
-            symmetry_fig.update_layout(
-                title="Sol-Sağ Dağılımı" if selected_language == "Türkçe" else "Left-Right Distribution",
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='white'),
-                height=400
-            )
-            st.plotly_chart(symmetry_fig, use_container_width=True)
-            st.markdown(texts['symmetry_text'])
+                st.plotly_chart(box_fig, use_container_width=True)
+                st.markdown(texts['size_text'])
 
-            # Mesafe analizi
-            st.markdown("---")
-            st.subheader("Mesafe Analizi" if selected_language == "Türkçe" else "Distance Analysis")
+                # Güven skoru analizi
+                st.markdown("---")
+                st.subheader("Güven Skoru Analizi" if selected_language == "Türkçe" else "Confidence Score Analysis")
 
-            distances = []
-            pair_labels = []
-            for i, box1 in enumerate(boxes):
-                for j, box2 in enumerate(boxes[i+1:], i+1):
-                    x1, y1 = (box1.xyxy[0][0] + box1.xyxy[0][2])/2, (box1.xyxy[0][1] + box1.xyxy[0][3])/2
-                    x2, y2 = (box2.xyxy[0][0] + box2.xyxy[0][2])/2, (box2.xyxy[0][1] + box2.xyxy[0][3])/2
-                    distance = np.sqrt((x2-x1)**2 + (y2-y1)**2)
-                    distances.append(distance)
-                    # Sadece bölge isimlerini al
-                    label1 = results[0].names[int(box1.cls)].split('_')[0].upper()
-                    label2 = results[0].names[int(box2.cls)].split('_')[0].upper()
-                    pair_labels.append(f"{label1} - {label2}")
+                conf_data = []
+                conf_labels = []
+                for box in boxes:
+                    conf_data.append(float(box.conf))
+                    # Sadece bölge ismini al
+                    conf_labels.append(results[0].names[int(box.cls)].split('_')[0].upper())
 
-            dist_fig = go.Figure(data=go.Histogram(
-                x=distances,
-                nbinsx=30,
-                opacity=0.7
-            ))
-            dist_fig.update_layout(
-                title="Bölgeler Arası Mesafe Dağılımı" if selected_language == "Türkçe" else "Inter-Region Distance Distribution",
-                xaxis_title="Mesafe" if selected_language == "Türkçe" else "Distance",
-                yaxis_title="Frekans" if selected_language == "Türkçe" else "Frequency",
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='white'),
-                height=400
-            )
-            st.plotly_chart(dist_fig, use_container_width=True)
-            st.markdown(texts['distance_text'])
+                conf_fig = go.Figure()
+                for label in set(conf_labels):
+                    label_confs = [conf for conf, l in zip(conf_data, conf_labels) if l == label]
+                    conf_fig.add_trace(go.Violin(
+                        y=label_confs,
+                        name=label,
+                        box_visible=True,
+                        meanline_visible=True
+                    ))
 
-    except Exception as e:
-        error_msg = "An error occurred" if selected_language == "English" else "Hata oluştu"
-        retry_msg = "Please try another image or refresh the page" if selected_language == "English" else "Lütfen farklı bir görüntü deneyin veya sayfayı yenileyin"
-        st.error(f"{error_msg}: {str(e)}")
-        st.error(retry_msg)
+                conf_fig.update_layout(
+                    title="Güven Skorları Dağılımı" if selected_language == "Türkçe" else "Confidence Score Distribution",
+                    yaxis_title="Güven Skoru" if selected_language == "Türkçe" else "Confidence Score",
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='white'),
+                    height=400
+                )
+                st.plotly_chart(conf_fig, use_container_width=True)
+                st.markdown(texts['confidence_text'])
+
+                # Simetri analizi
+                st.markdown("---")
+                st.subheader("Simetri Analizi" if selected_language == "Türkçe" else "Symmetry Analysis")
+
+                # Görüntüyü dikey olarak ikiye böl
+                image_center = img_array.shape[1] // 2
+                left_detections = 0
+                right_detections = 0
+
+                for box in boxes:
+                    x1, x2 = box.xyxy[0].cpu().numpy()[[0, 2]]
+                    center = (x1 + x2) / 2
+                    if center < image_center:
+                        left_detections += 1
+                    else:
+                        right_detections += 1
+
+                # Simetri grafiği
+                symmetry_fig = go.Figure(data=[
+                    go.Bar(
+                        x=['Sol', 'Sağ'] if selected_language == "Türkçe" else ['Left', 'Right'],
+                        y=[left_detections, right_detections],
+                        marker_color=['#1f77b4', '#ff7f0e']
+                    )
+                ])
+                symmetry_fig.update_layout(
+                    title="Sol-Sağ Dağılımı" if selected_language == "Türkçe" else "Left-Right Distribution",
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='white'),
+                    height=400
+                )
+                st.plotly_chart(symmetry_fig, use_container_width=True)
+                st.markdown(texts['symmetry_text'])
+
+                # Mesafe analizi
+                st.markdown("---")
+                st.subheader("Mesafe Analizi" if selected_language == "Türkçe" else "Distance Analysis")
+
+                distances = []
+                pair_labels = []
+                for i, box1 in enumerate(boxes):
+                    for j, box2 in enumerate(boxes[i+1:], i+1):
+                        x1, y1 = (box1.xyxy[0][0] + box1.xyxy[0][2])/2, (box1.xyxy[0][1] + box1.xyxy[0][3])/2
+                        x2, y2 = (box2.xyxy[0][0] + box2.xyxy[0][2])/2, (box2.xyxy[0][1] + box2.xyxy[0][3])/2
+                        distance = np.sqrt((x2-x1)**2 + (y2-y1)**2)
+                        distances.append(distance)
+                        # Sadece bölge isimlerini al
+                        label1 = results[0].names[int(box1.cls)].split('_')[0].upper()
+                        label2 = results[0].names[int(box2.cls)].split('_')[0].upper()
+                        pair_labels.append(f"{label1} - {label2}")
+
+                dist_fig = go.Figure(data=go.Histogram(
+                    x=distances,
+                    nbinsx=30,
+                    opacity=0.7
+                ))
+                dist_fig.update_layout(
+                    title="Bölgeler Arası Mesafe Dağılımı" if selected_language == "Türkçe" else "Inter-Region Distance Distribution",
+                    xaxis_title="Mesafe" if selected_language == "Türkçe" else "Distance",
+                    yaxis_title="Frekans" if selected_language == "Türkçe" else "Frequency",
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='white'),
+                    height=400
+                )
+                st.plotly_chart(dist_fig, use_container_width=True)
+                st.markdown(texts['distance_text'])
+
+        except Exception as e:
+            error_msg = "An error occurred" if selected_language == "English" else "Hata oluştu"
+            retry_msg = "Please try another image or refresh the page" if selected_language == "English" else "Lütfen farklı bir görüntü deneyin veya sayfayı yenileyin"
+            st.error(f"{error_msg}: {str(e)}")
+            st.error(retry_msg)

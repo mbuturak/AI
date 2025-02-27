@@ -150,6 +150,75 @@ def add_random_brand(fig, img_shape, regions=None):
     
     return fig
 
+# Protez/İmplant tespiti ve gösterimi fonksiyonu
+def detect_and_show_implants(fig, boxes, results, selected_language):
+    """Protezleri tespit eder ve özel formatta gösterir"""
+    implant_found = False
+    
+    for i, box in enumerate(boxes):
+        x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+        conf = float(box.conf)
+        cls = int(box.cls)
+        full_label = results[0].names[cls]
+        base_label = full_label.split('_')[0].upper()
+        
+        # İmplant/protez kontrolü
+        # Not: Burada gerçek modelin sınıflarına göre düzenleme yapmanız gerekecek
+        is_implant = ("IMPLANT" in full_label.upper() or 
+                      "PROTEZ" in full_label.upper() or 
+                      "PROSTHESIS" in full_label.upper())
+        
+        if is_implant:
+            implant_found = True
+            cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+            
+            # Rastgele marka seç (gerçek sistemde bu bilgi modelden gelebilir)
+            implant_brands = ["Stryker", "Zimmer Biomet", "DePuy Synthes", "Smith & Nephew", "Medtronic"]
+            brand = random.choice(implant_brands)
+            
+            # İmplant bilgi kutusu ekle
+            fig.add_annotation(
+                x=cx,
+                y=cy,
+                text=f"{base_label} İmplant<br>Marka: {brand}<br>Güven: {conf:.2f}" if selected_language == "Türkçe"
+                else f"{base_label} Implant<br>Brand: {brand}<br>Confidence: {conf:.2f}",
+                showarrow=True,
+                arrowhead=2,
+                arrowsize=1,
+                arrowwidth=2,
+                arrowcolor='white',
+                font=dict(
+                    color='white',
+                    size=12,
+                    weight='bold'
+                ),
+                align="center",
+                bgcolor='rgba(255, 0, 0, 0.8)',  # Kırmızı arka plan
+                opacity=0.9,
+                bordercolor='white',
+                borderwidth=2,
+                borderpad=4,
+                ax=0,
+                ay=-40
+            )
+            
+            # Merkeze bir işaret ekle (opsiyonel)
+            fig.add_trace(go.Scatter(
+                x=[cx],
+                y=[cy],
+                mode='markers',
+                marker=dict(
+                    symbol='cross',
+                    size=15,
+                    color='red',
+                    line=dict(width=2, color='white')
+                ),
+                name="İmplant" if selected_language == "Türkçe" else "Implant",
+                showlegend=True
+            ))
+    
+    return implant_found, fig
+
 # Dil seçenekleri için metinler
 TEXTS = {
     'English': {
@@ -515,9 +584,15 @@ if selected_demo:
                 if base_label in ["HIP", "SHOULDER"]:
                     region_names.add(base_label)
 
-                # Bölge ismini görüntüde göster
-                cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
-                if "true" in full_label.lower():  # Yalnızca "true" tespitler için çizim
+                # İmplant kontrolü
+                is_implant = ("IMPLANT" in full_label.upper() or 
+                              "PROTEZ" in full_label.upper() or 
+                              "PROSTHESIS" in full_label.upper())
+                
+                # İmplant DEĞİLSE normal işaretleme yap
+                if not is_implant and "true" in full_label.lower():
+                    # Bölge ismini görüntüde göster
+                    cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
                     width = x2 - x1
                     height = y2 - y1
                     color = colors[i % len(colors)]
@@ -574,6 +649,45 @@ if selected_demo:
                 borderwidth=2,
                 borderpad=4,
                 align='left'
+            )
+
+        # İmplantları tespit et ve göster
+        implant_found, fig = detect_and_show_implants(fig, results[0].boxes, results, selected_language)
+        
+        # Eğer implant yoksa ve sadece implant gösterilmek isteniyorsa, burada diğer bölgelerle ilgili kodu çalıştırmayabilirsiniz
+        # Bu durumda, sadece implant tespit edilmişse bölgeleri göster, değilse boş bir görüntü göster
+        
+        # Sadece implant varsa göster, yoksa boş görüntü
+        if not implant_found:
+            # İmplant yoksa boş bir görüntü göster
+            # Ya da alternatif mesaj ekle
+            fig = go.Figure()
+            fig.add_trace(go.Image(z=img_array))
+            fig.add_annotation(
+                x=0.5,
+                y=0.5,
+                xref="paper",
+                yref="paper",
+                text="İmplant tespit edilmedi" if selected_language == "Türkçe" else "No implant detected",
+                showarrow=False,
+                font=dict(
+                    color='white',
+                    size=24,
+                ),
+                bgcolor='rgba(0, 0, 0, 0.7)',
+                bordercolor='white',
+                borderwidth=2,
+                borderpad=4,
+                align='center'
+            )
+            fig.update_layout(
+                margin=dict(l=0, r=0, t=0, b=0),
+                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                plot_bgcolor='black',
+                paper_bgcolor='black',
+                width=None,
+                height=600
             )
 
         # Update layout with improved legend
@@ -955,9 +1069,15 @@ else:
                         if base_label in ["HIP", "SHOULDER"]:
                             region_names.add(base_label)
 
-                        # Bölge ismini görüntüde göster
-                        cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
-                        if "true" in full_label.lower():  # Yalnızca "true" tespitler için çizim
+                        # İmplant kontrolü
+                        is_implant = ("IMPLANT" in full_label.upper() or 
+                                      "PROTEZ" in full_label.upper() or 
+                                      "PROSTHESIS" in full_label.upper())
+                        
+                        # İmplant DEĞİLSE normal işaretleme yap
+                        if not is_implant and "true" in full_label.lower():
+                            # Bölge ismini görüntüde göster
+                            cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
                             width = x2 - x1
                             height = y2 - y1
                             color = colors[i % len(colors)]
@@ -1014,6 +1134,45 @@ else:
                         borderwidth=2,
                         borderpad=4,
                         align='left'
+                    )
+
+                # İmplantları tespit et ve göster
+                implant_found, fig = detect_and_show_implants(fig, results[0].boxes, results, selected_language)
+                
+                # Eğer implant yoksa ve sadece implant gösterilmek isteniyorsa, burada diğer bölgelerle ilgili kodu çalıştırmayabilirsiniz
+                # Bu durumda, sadece implant tespit edilmişse bölgeleri göster, değilse boş bir görüntü göster
+                
+                # Sadece implant varsa göster, yoksa boş görüntü
+                if not implant_found:
+                    # İmplant yoksa boş bir görüntü göster
+                    # Ya da alternatif mesaj ekle
+                    fig = go.Figure()
+                    fig.add_trace(go.Image(z=img_array))
+                    fig.add_annotation(
+                        x=0.5,
+                        y=0.5,
+                        xref="paper",
+                        yref="paper",
+                        text="İmplant tespit edilmedi" if selected_language == "Türkçe" else "No implant detected",
+                        showarrow=False,
+                        font=dict(
+                            color='white',
+                            size=24,
+                        ),
+                        bgcolor='rgba(0, 0, 0, 0.7)',
+                        bordercolor='white',
+                        borderwidth=2,
+                        borderpad=4,
+                        align='center'
+                    )
+                    fig.update_layout(
+                        margin=dict(l=0, r=0, t=0, b=0),
+                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        plot_bgcolor='black',
+                        paper_bgcolor='black',
+                        width=None,
+                        height=600
                     )
 
                 # Update layout with improved legend

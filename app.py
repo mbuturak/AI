@@ -341,7 +341,7 @@ if selected_demo:
         results = model.predict(img_array, conf=0.25)
         
         # Debug için sınıf isimlerini kontrol et
-        st.write("Model Sınıfları:", results[0].names)
+        #st.write("Model Sınıfları:", results[0].names)
 
         # Create Plotly figure
         fig = go.Figure()

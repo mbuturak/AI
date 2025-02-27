@@ -382,37 +382,41 @@ if selected_demo:
                     height = y2 - y1
                     color = colors[i % len(colors)]
 
-                    # Path çizimi için noktalar
-                    points = np.array([
-                        [x1, y1],  # Sol üst
-                        [cx, y1 - height * 0.1],  # Üst orta
-                        [x2, y1],  # Sağ üst
-                        [x2 + width * 0.1, cy],  # Sağ orta
-                        [x2, y2],  # Sağ alt
-                        [cx, y2 + height * 0.1],  # Alt orta
-                        [x1, y2],  # Sol alt
-                        [x1 - width * 0.1, cy],  # Sol orta
-                        [x1, y1]  # Başlangıç noktasına dön
-                    ])
-
-                    # Path çizimi
+                    # Büyük path çizimi yerine ok işareti kullan
+                    arrow_length = min(width, height) * 0.3  # Ok uzunluğu
+                    
+                    # Ok çizimi için noktalar (merkeze doğru ok)
                     fig.add_trace(go.Scatter(
-                        x=points[:, 0],
-                        y=points[:, 1],
-                        mode='lines',
-                        line=dict(color=color, width=3),
+                        x=[cx, cx],
+                        y=[y1 - 15, y1 - 5],  # Yukarıdan aşağıya ok
+                        mode='lines+markers',
+                        line=dict(color=color, width=2),
+                        marker=dict(
+                            symbol=['arrow-down', 'dot'],
+                            size=[10, 6],
+                            color=color
+                        ),
                         name=base_label,
                         showlegend=True,
                         hoverinfo='text',
                         hovertext=f"{base_label}<br>Güven: {conf:.2%}" if selected_language == "Türkçe"
                         else f"{base_label}<br>Confidence: {conf:.2%}"
                     ))
+                    
+                    # Bölgenin etrafına ince çerçeve çiz
+                    fig.add_shape(
+                        type="rect",
+                        x0=x1, y0=y1, x1=x2, y1=y2,
+                        line=dict(color=color, width=2),
+                        fillcolor="rgba(0,0,0,0)"
+                    )
 
                 # Etiket ekle (her zaman bölge ismi göster)
+                label_text = f"{base_label}" if "true" not in full_label.lower() else f"{base_label} (TRUE)"
                 fig.add_annotation(
                     x=cx,
-                    y=y1 - 10,
-                    text=base_label,
+                    y=y1 - 20,  # Biraz daha yukarıda göster
+                    text=label_text,
                     showarrow=False,
                     font=dict(
                         color='white',
@@ -420,7 +424,7 @@ if selected_demo:
                         weight='bold'
                     ),
                     bgcolor=color if "true" in full_label.lower() else 'rgba(0, 0, 0, 0.7)',
-                    opacity=0.7,
+                    opacity=0.8,
                     bordercolor=color if "true" in full_label.lower() else 'white',
                     borderwidth=2,
                     borderpad=4,
@@ -829,37 +833,41 @@ else:
                             height = y2 - y1
                             color = colors[i % len(colors)]
 
-                            # Path çizimi için noktalar
-                            points = np.array([
-                                [x1, y1],  # Sol üst
-                                [cx, y1 - height * 0.1],  # Üst orta
-                                [x2, y1],  # Sağ üst
-                                [x2 + width * 0.1, cy],  # Sağ orta
-                                [x2, y2],  # Sağ alt
-                                [cx, y2 + height * 0.1],  # Alt orta
-                                [x1, y2],  # Sol alt
-                                [x1 - width * 0.1, cy],  # Sol orta
-                                [x1, y1]  # Başlangıç noktasına dön
-                            ])
-
-                            # Path çizimi
+                            # Büyük path çizimi yerine ok işareti kullan
+                            arrow_length = min(width, height) * 0.3  # Ok uzunluğu
+                            
+                            # Ok çizimi için noktalar (merkeze doğru ok)
                             fig.add_trace(go.Scatter(
-                                x=points[:, 0],
-                                y=points[:, 1],
-                                mode='lines',
-                                line=dict(color=color, width=3),
+                                x=[cx, cx],
+                                y=[y1 - 15, y1 - 5],  # Yukarıdan aşağıya ok
+                                mode='lines+markers',
+                                line=dict(color=color, width=2),
+                                marker=dict(
+                                    symbol=['arrow-down', 'dot'],
+                                    size=[10, 6],
+                                    color=color
+                                ),
                                 name=base_label,
                                 showlegend=True,
                                 hoverinfo='text',
                                 hovertext=f"{base_label}<br>Güven: {conf:.2%}" if selected_language == "Türkçe"
                                 else f"{base_label}<br>Confidence: {conf:.2%}"
                             ))
+                            
+                            # Bölgenin etrafına ince çerçeve çiz
+                            fig.add_shape(
+                                type="rect",
+                                x0=x1, y0=y1, x1=x2, y1=y2,
+                                line=dict(color=color, width=2),
+                                fillcolor="rgba(0,0,0,0)"
+                            )
 
                         # Etiket ekle (her zaman bölge ismi göster)
+                        label_text = f"{base_label}" if "true" not in full_label.lower() else f"{base_label} (TRUE)"
                         fig.add_annotation(
                             x=cx,
-                            y=y1 - 10,
-                            text=base_label,
+                            y=y1 - 20,  # Biraz daha yukarıda göster
+                            text=label_text,
                             showarrow=False,
                             font=dict(
                                 color='white',
@@ -867,7 +875,7 @@ else:
                                 weight='bold'
                             ),
                             bgcolor=color if "true" in full_label.lower() else 'rgba(0, 0, 0, 0.7)',
-                            opacity=0.7,
+                            opacity=0.8,
                             bordercolor=color if "true" in full_label.lower() else 'white',
                             borderwidth=2,
                             borderpad=4,

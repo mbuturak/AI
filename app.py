@@ -382,18 +382,14 @@ if selected_demo:
                     height = y2 - y1
                     color = colors[i % len(colors)]
 
-                    # Büyük path çizimi yerine ok işareti kullan
-                    arrow_length = min(width, height) * 0.3  # Ok uzunluğu
-                    
-                    # Ok çizimi için noktalar (merkeze doğru ok)
+                    # Ok çizimi yerine basit bir işaretçi kullanalım
                     fig.add_trace(go.Scatter(
-                        x=[cx, cx],
-                        y=[y1 - 15, y1 - 5],  # Yukarıdan aşağıya ok
-                        mode='lines+markers',
-                        line=dict(color=color, width=2),
+                        x=[cx],
+                        y=[y1 - 10],
+                        mode='markers',
                         marker=dict(
-                            symbol=['arrow-down', 'dot'],
-                            size=[10, 6],
+                            symbol='triangle-down',
+                            size=12,
                             color=color
                         ),
                         name=base_label,
@@ -833,18 +829,14 @@ else:
                             height = y2 - y1
                             color = colors[i % len(colors)]
 
-                            # Büyük path çizimi yerine ok işareti kullan
-                            arrow_length = min(width, height) * 0.3  # Ok uzunluğu
-                            
-                            # Ok çizimi için noktalar (merkeze doğru ok)
+                            # Ok çizimi yerine basit bir işaretçi kullanalım
                             fig.add_trace(go.Scatter(
-                                x=[cx, cx],
-                                y=[y1 - 15, y1 - 5],  # Yukarıdan aşağıya ok
-                                mode='lines+markers',
-                                line=dict(color=color, width=2),
+                                x=[cx],
+                                y=[y1 - 10],
+                                mode='markers',
                                 marker=dict(
-                                    symbol=['arrow-down', 'dot'],
-                                    size=[10, 6],
+                                    symbol='triangle-down',
+                                    size=12,
                                     color=color
                                 ),
                                 name=base_label,

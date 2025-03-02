@@ -349,27 +349,41 @@ if selected_demo:
         # Add image as background
         fig.add_trace(go.Image(z=img_array))
 
-        # Define color palette - Modern ve tıbbi görüntülere uygun renkler
+        # Modern ve tıbbi görüntülemeye uygun renk paleti
         colors = [
-            '#3498db',  # Mavi
-            '#2ecc71',  # Yeşil
-            '#e74c3c',  # Kırmızı
-            '#9b59b6',  # Mor
-            '#f39c12',  # Turuncu
-            '#1abc9c',  # Turkuaz
-            '#34495e',  # Lacivert
+            "#1f77b4",  # Mavi
+            "#2ca02c",  # Yeşil
+            "#d62728",  # Kırmızı
+            "#9467bd",  # Mor
+            "#ff7f0e",  # Turuncu
+            "#17becf",  # Turkuaz
+            "#0c4b8e"   # Lacivert
         ]
-
-        # Glow efekti için kullanılacak renk tonları
+        
+        # Yarı saydam dolgu renkleri
+        fill_colors = [
+            "rgba(31, 119, 180, 0.2)",  # Mavi
+            "rgba(44, 160, 44, 0.2)",   # Yeşil
+            "rgba(214, 39, 40, 0.2)",   # Kırmızı
+            "rgba(148, 103, 189, 0.2)", # Mor
+            "rgba(255, 127, 14, 0.2)",  # Turuncu
+            "rgba(23, 190, 207, 0.2)",  # Turkuaz
+            "rgba(12, 75, 142, 0.2)"    # Lacivert
+        ]
+        
+        # Vurgulama için parlaklık renkleri
         glow_colors = [
-            'rgba(52, 152, 219, 0.3)',  # Mavi
-            'rgba(46, 204, 113, 0.3)',  # Yeşil
-            'rgba(231, 76, 60, 0.3)',   # Kırmızı
-            'rgba(155, 89, 182, 0.3)',  # Mor
-            'rgba(243, 156, 18, 0.3)',  # Turuncu
-            'rgba(26, 188, 156, 0.3)',  # Turkuaz
-            'rgba(52, 73, 94, 0.3)',    # Lacivert
+            "#3498db",  # Açık Mavi
+            "#2ecc71",  # Açık Yeşil
+            "#e74c3c",  # Açık Kırmızı
+            "#9b59b6",  # Açık Mor
+            "#f39c12",  # Açık Turuncu
+            "#1abc9c",  # Açık Turkuaz
+            "#2980b9"   # Açık Lacivert
         ]
+        
+        # Köşe yuvarlaklığı için yarıçap
+        corner_radius = 3
 
         # Add detected areas with custom shapes based on class
         if len(results) > 0 and results[0].boxes is not None:
@@ -393,28 +407,20 @@ if selected_demo:
                     height = y2 - y1
                     color = colors[i % len(colors)]
                     
-                    # Yuvarlatılmış köşeli, yarı saydam dolgulu şekil
-                    # Not: Plotly'de doğrudan yuvarlatılmış köşeli dikdörtgen olmadığı için
-                    # Köşeleri yuvarlatılmış görünüm için özel bir çözüm uyguluyoruz
-                    
                     # Ana dikdörtgen
                     fig.add_shape(
                         type="rect",
                         x0=x1, y0=y1, x1=x2, y1=y2,
                         line=dict(
-                            color=color, 
-                            width=2.5,
-                            dash="solid"
+                            color=colors[i % len(colors)],
+                            width=2
                         ),
-                        fillcolor=f"rgba({int(color[1:3], 16)}, {int(color[3:5], 16)}, {int(color[5:7], 16)}, 0.15)",
-                        opacity=0.8,
+                        fillcolor=fill_colors[i % len(fill_colors)],
                         layer="below",
-                        xref="x", yref="y",
-                        line_join="round",
+                        xref="x", yref="y"
                     )
                     
                     # Köşeleri yuvarlatmak için daireler ekleyelim
-                    corner_radius = 5  # Köşe yuvarlatma yarıçapı
                     corners = [
                         (x1, y1),  # Sol üst
                         (x2, y1),  # Sağ üst
@@ -422,15 +428,14 @@ if selected_demo:
                         (x2, y2),  # Sağ alt
                     ]
                     
-                    for cx, cy in corners:
+                    for corner_x, corner_y in corners:
                         fig.add_shape(
                             type="circle",
-                            x0=cx-corner_radius, y0=cy-corner_radius,
-                            x1=cx+corner_radius, y1=cy+corner_radius,
-                            line=dict(color=color, width=0),
-                            fillcolor=f"rgba({int(color[1:3], 16)}, {int(color[3:5], 16)}, {int(color[5:7], 16)}, 0.15)",
-                            opacity=0.8,
-                            layer="below",
+                            x0=corner_x-corner_radius, y0=corner_y-corner_radius,
+                            x1=corner_x+corner_radius, y1=corner_y+corner_radius,
+                            line=dict(color=colors[i % len(colors)], width=2),
+                            fillcolor=fill_colors[i % len(fill_colors)],
+                            layer="below"
                         )
                     
                     # Vurgulama efekti için dış çerçeve
@@ -440,13 +445,11 @@ if selected_demo:
                         line=dict(
                             color=glow_colors[i % len(glow_colors)], 
                             width=2,
-                            dash="dot"
+                            dash="dashdot"
                         ),
                         fillcolor="rgba(0,0,0,0)",
-                        opacity=0.7,
                         layer="below",
-                        xref="x", yref="y",
-                        line_join="round",
+                        xref="x", yref="y"
                     )
                     
                     # Dış çerçevenin köşelerini de yuvarlatmak için daireler ekleyelim
@@ -457,70 +460,48 @@ if selected_demo:
                         (x2+5, y2+5),  # Sağ alt
                     ]
                     
-                    for cx, cy in outer_corners:
+                    for corner_x, corner_y in outer_corners:
                         fig.add_shape(
                             type="circle",
-                            x0=cx-corner_radius, y0=cy-corner_radius,
-                            x1=cx+corner_radius, y1=cy+corner_radius,
-                            line=dict(color=glow_colors[i % len(glow_colors)], width=1, dash="dot"),
+                            x0=corner_x-corner_radius, y0=corner_y-corner_radius,
+                            x1=corner_x+corner_radius, y1=corner_y+corner_radius,
+                            line=dict(color=glow_colors[i % len(glow_colors)], width=1),
                             fillcolor="rgba(0,0,0,0)",
-                            opacity=0.7,
-                            layer="below",
+                            layer="below"
                         )
                     
-                    # Merkez noktasını belirten bir işaretçi ekleyelim
+                    # Merkez işaretçisi
                     fig.add_trace(go.Scatter(
                         x=[cx],
                         y=[cy],
-                        mode='markers',
+                        mode="markers",
                         marker=dict(
-                            symbol='circle',
-                            size=8,
-                            color='white',
-                            line=dict(color=color, width=2),
-                            opacity=0.7
+                            symbol="diamond",
+                            size=10,
+                            color=colors[i % len(colors)],
+                            line=dict(width=1, color="#ffffff")
                         ),
                         showlegend=False,
-                        hoverinfo='none'
+                        hoverinfo="text",
+                        hovertext=f"{base_label}: {conf:.2f}"
                     ))
                     
-                    # Köşe noktalarını belirten işaretçiler ekleyelim
-                    corner_x = [x1, x2, x1, x2]
-                    corner_y = [y1, y1, y2, y2]
-                    fig.add_trace(go.Scatter(
-                        x=corner_x,
-                        y=corner_y,
-                        mode='markers',
-                        marker=dict(
-                            symbol='circle',
-                            size=5,
-                            color=color,
-                            line=dict(color='white', width=1),
-                            opacity=0.7
-                        ),
-                        showlegend=False,
-                        hoverinfo='none'
-                    ))
-                    
-                    # Bölge adını içeren bir tooltip ekleyelim
-                    tooltip_text = f"{base_label}<br>Güven: {conf:.2%}" if selected_language == "Türkçe" else f"{base_label}<br>Confidence: {conf:.2%}"
-                    if "true" in full_label.lower():
-                        tooltip_text += "<br><b>TRUE</b>" if selected_language == "English" else "<br><b>DOĞRU</b>"
-                    
-                    fig.add_trace(go.Scatter(
-                        x=[(x1+x2)/2],
-                        y=[(y1+y2)/2],
-                        mode='markers',
-                        marker=dict(
-                            symbol='circle',
-                            size=1,
-                            color='rgba(0,0,0,0)',
-                            opacity=0
-                        ),
-                        showlegend=False,
-                        hoverinfo='text',
-                        hovertext=tooltip_text
-                    ))
+                    # Etiket
+                    fig.add_annotation(
+                        x=x1, y=y1-10,
+                        text=f"{base_label}: {conf:.2f}",
+                        showarrow=True,
+                        arrowhead=2,
+                        arrowsize=1,
+                        arrowwidth=2,
+                        arrowcolor=colors[i % len(colors)],
+                        font=dict(size=12, color="#ffffff"),
+                        align="center",
+                        bordercolor=colors[i % len(colors)],
+                        borderwidth=2,
+                        bgcolor="rgba(0, 0, 0, 0.5)",
+                        borderpad=4
+                    )
 
                 # Etiket ekle (her zaman bölge ismi göster) - Daha modern tasarım
                 label_text = f"{base_label}" if "true" not in full_label.lower() else f"{base_label} (TRUE)"
@@ -1004,27 +985,41 @@ else:
                 # Add image as background
                 fig.add_trace(go.Image(z=img_array))
 
-                # Define color palette - Modern ve tıbbi görüntülere uygun renkler
+                # Modern ve tıbbi görüntülemeye uygun renk paleti
                 colors = [
-                    '#3498db',  # Mavi
-                    '#2ecc71',  # Yeşil
-                    '#e74c3c',  # Kırmızı
-                    '#9b59b6',  # Mor
-                    '#f39c12',  # Turuncu
-                    '#1abc9c',  # Turkuaz
-                    '#34495e',  # Lacivert
+                    "#1f77b4",  # Mavi
+                    "#2ca02c",  # Yeşil
+                    "#d62728",  # Kırmızı
+                    "#9467bd",  # Mor
+                    "#ff7f0e",  # Turuncu
+                    "#17becf",  # Turkuaz
+                    "#0c4b8e"   # Lacivert
                 ]
-
-                # Glow efekti için kullanılacak renk tonları
+                
+                # Yarı saydam dolgu renkleri
+                fill_colors = [
+                    "rgba(31, 119, 180, 0.2)",  # Mavi
+                    "rgba(44, 160, 44, 0.2)",   # Yeşil
+                    "rgba(214, 39, 40, 0.2)",   # Kırmızı
+                    "rgba(148, 103, 189, 0.2)", # Mor
+                    "rgba(255, 127, 14, 0.2)",  # Turuncu
+                    "rgba(23, 190, 207, 0.2)",  # Turkuaz
+                    "rgba(12, 75, 142, 0.2)"    # Lacivert
+                ]
+                
+                # Vurgulama için parlaklık renkleri
                 glow_colors = [
-                    'rgba(52, 152, 219, 0.3)',  # Mavi
-                    'rgba(46, 204, 113, 0.3)',  # Yeşil
-                    'rgba(231, 76, 60, 0.3)',   # Kırmızı
-                    'rgba(155, 89, 182, 0.3)',  # Mor
-                    'rgba(243, 156, 18, 0.3)',  # Turuncu
-                    'rgba(26, 188, 156, 0.3)',  # Turkuaz
-                    'rgba(52, 73, 94, 0.3)',    # Lacivert
+                    "#3498db",  # Açık Mavi
+                    "#2ecc71",  # Açık Yeşil
+                    "#e74c3c",  # Açık Kırmızı
+                    "#9b59b6",  # Açık Mor
+                    "#f39c12",  # Açık Turuncu
+                    "#1abc9c",  # Açık Turkuaz
+                    "#2980b9"   # Açık Lacivert
                 ]
+                
+                # Köşe yuvarlaklığı için yarıçap
+                corner_radius = 3
 
                 # Add detected areas with custom shapes based on class
                 if len(results) > 0 and results[0].boxes is not None:
@@ -1048,28 +1043,20 @@ else:
                             height = y2 - y1
                             color = colors[i % len(colors)]
                             
-                            # Yuvarlatılmış köşeli, yarı saydam dolgulu şekil
-                            # Not: Plotly'de doğrudan yuvarlatılmış köşeli dikdörtgen olmadığı için
-                            # Köşeleri yuvarlatılmış görünüm için özel bir çözüm uyguluyoruz
-                            
                             # Ana dikdörtgen
                             fig.add_shape(
                                 type="rect",
                                 x0=x1, y0=y1, x1=x2, y1=y2,
                                 line=dict(
-                                    color=color, 
-                                    width=2.5,
-                                    dash="solid"
+                                    color=colors[i % len(colors)],
+                                    width=2
                                 ),
-                                fillcolor=f"rgba({int(color[1:3], 16)}, {int(color[3:5], 16)}, {int(color[5:7], 16)}, 0.15)",
-                                opacity=0.8,
+                                fillcolor=fill_colors[i % len(fill_colors)],
                                 layer="below",
-                                xref="x", yref="y",
-                                line_join="round",
+                                xref="x", yref="y"
                             )
                             
                             # Köşeleri yuvarlatmak için daireler ekleyelim
-                            corner_radius = 5  # Köşe yuvarlatma yarıçapı
                             corners = [
                                 (x1, y1),  # Sol üst
                                 (x2, y1),  # Sağ üst
@@ -1077,15 +1064,14 @@ else:
                                 (x2, y2),  # Sağ alt
                             ]
                             
-                            for cx, cy in corners:
+                            for corner_x, corner_y in corners:
                                 fig.add_shape(
                                     type="circle",
-                                    x0=cx-corner_radius, y0=cy-corner_radius,
-                                    x1=cx+corner_radius, y1=cy+corner_radius,
-                                    line=dict(color=color, width=0),
-                                    fillcolor=f"rgba({int(color[1:3], 16)}, {int(color[3:5], 16)}, {int(color[5:7], 16)}, 0.15)",
-                                    opacity=0.8,
-                                    layer="below",
+                                    x0=corner_x-corner_radius, y0=corner_y-corner_radius,
+                                    x1=corner_x+corner_radius, y1=corner_y+corner_radius,
+                                    line=dict(color=colors[i % len(colors)], width=2),
+                                    fillcolor=fill_colors[i % len(fill_colors)],
+                                    layer="below"
                                 )
                             
                             # Vurgulama efekti için dış çerçeve
@@ -1095,13 +1081,11 @@ else:
                                 line=dict(
                                     color=glow_colors[i % len(glow_colors)], 
                                     width=2,
-                                    dash="dot"
+                                    dash="dashdot"
                                 ),
                                 fillcolor="rgba(0,0,0,0)",
-                                opacity=0.7,
                                 layer="below",
-                                xref="x", yref="y",
-                                line_join="round",
+                                xref="x", yref="y"
                             )
                             
                             # Dış çerçevenin köşelerini de yuvarlatmak için daireler ekleyelim
@@ -1112,70 +1096,48 @@ else:
                                 (x2+5, y2+5),  # Sağ alt
                             ]
                             
-                            for cx, cy in outer_corners:
+                            for corner_x, corner_y in outer_corners:
                                 fig.add_shape(
                                     type="circle",
-                                    x0=cx-corner_radius, y0=cy-corner_radius,
-                                    x1=cx+corner_radius, y1=cy+corner_radius,
-                                    line=dict(color=glow_colors[i % len(glow_colors)], width=1, dash="dot"),
+                                    x0=corner_x-corner_radius, y0=corner_y-corner_radius,
+                                    x1=corner_x+corner_radius, y1=corner_y+corner_radius,
+                                    line=dict(color=glow_colors[i % len(glow_colors)], width=1),
                                     fillcolor="rgba(0,0,0,0)",
-                                    opacity=0.7,
-                                    layer="below",
+                                    layer="below"
                                 )
                             
-                            # Merkez noktasını belirten bir işaretçi ekleyelim
+                            # Merkez işaretçisi
                             fig.add_trace(go.Scatter(
                                 x=[cx],
                                 y=[cy],
-                                mode='markers',
+                                mode="markers",
                                 marker=dict(
-                                    symbol='circle',
-                                    size=8,
-                                    color='white',
-                                    line=dict(color=color, width=2),
-                                    opacity=0.7
+                                    symbol="diamond",
+                                    size=10,
+                                    color=colors[i % len(colors)],
+                                    line=dict(width=1, color="#ffffff")
                                 ),
                                 showlegend=False,
-                                hoverinfo='none'
+                                hoverinfo="text",
+                                hovertext=f"{base_label}: {conf:.2f}"
                             ))
                             
-                            # Köşe noktalarını belirten işaretçiler ekleyelim
-                            corner_x = [x1, x2, x1, x2]
-                            corner_y = [y1, y1, y2, y2]
-                            fig.add_trace(go.Scatter(
-                                x=corner_x,
-                                y=corner_y,
-                                mode='markers',
-                                marker=dict(
-                                    symbol='circle',
-                                    size=5,
-                                    color=color,
-                                    line=dict(color='white', width=1),
-                                    opacity=0.7
-                                ),
-                                showlegend=False,
-                                hoverinfo='none'
-                            ))
-                            
-                            # Bölge adını içeren bir tooltip ekleyelim
-                            tooltip_text = f"{base_label}<br>Güven: {conf:.2%}" if selected_language == "Türkçe" else f"{base_label}<br>Confidence: {conf:.2%}"
-                            if "true" in full_label.lower():
-                                tooltip_text += "<br><b>TRUE</b>" if selected_language == "English" else "<br><b>DOĞRU</b>"
-                            
-                            fig.add_trace(go.Scatter(
-                                x=[(x1+x2)/2],
-                                y=[(y1+y2)/2],
-                                mode='markers',
-                                marker=dict(
-                                    symbol='circle',
-                                    size=1,
-                                    color='rgba(0,0,0,0)',
-                                    opacity=0
-                                ),
-                                showlegend=False,
-                                hoverinfo='text',
-                                hovertext=tooltip_text
-                            ))
+                            # Etiket
+                            fig.add_annotation(
+                                x=x1, y=y1-10,
+                                text=f"{base_label}: {conf:.2f}",
+                                showarrow=True,
+                                arrowhead=2,
+                                arrowsize=1,
+                                arrowwidth=2,
+                                arrowcolor=colors[i % len(colors)],
+                                font=dict(size=12, color="#ffffff"),
+                                align="center",
+                                bordercolor=colors[i % len(colors)],
+                                borderwidth=2,
+                                bgcolor="rgba(0, 0, 0, 0.5)",
+                                borderpad=4
+                            )
 
                         # Etiket ekle (her zaman bölge ismi göster) - Daha modern tasarım
                         label_text = f"{base_label}" if "true" not in full_label.lower() else f"{base_label} (TRUE)"

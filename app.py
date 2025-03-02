@@ -338,169 +338,170 @@ if selected_demo:
     
     # Perform detection
     with st.spinner(texts['loading']):
-        results = model.predict(img_array, conf=0.25)
-        
-        # Debug için sınıf isimlerini kontrol et
-        #st.write("Model Sınıfları:", results[0].names)
+        try:
+            results = model.predict(img_array, conf=0.25)
+            
+            # Debug için sınıf isimlerini kontrol et
+            #st.write("Model Sınıfları:", results[0].names)
 
-        # Create Plotly figure
-        fig = go.Figure()
+            # Create Plotly figure
+            fig = go.Figure()
 
-        # Add image as background
-        fig.add_trace(go.Image(z=img_array))
+            # Add image as background
+            fig.add_trace(go.Image(z=img_array))
 
-        # Modern ve tıbbi görüntülemeye uygun renk paleti
-        colors = [
-            "#1f77b4",  # Mavi
-            "#2ca02c",  # Yeşil
-            "#d62728",  # Kırmızı
-            "#9467bd",  # Mor
-            "#ff7f0e",  # Turuncu
-            "#17becf",  # Turkuaz
-            "#0c4b8e"   # Lacivert
-        ]
-        
-        # Yarı saydam dolgu renkleri
-        fill_colors = [
-            "rgba(31, 119, 180, 0.2)",  # Mavi
-            "rgba(44, 160, 44, 0.2)",   # Yeşil
-            "rgba(214, 39, 40, 0.2)",   # Kırmızı
-            "rgba(148, 103, 189, 0.2)", # Mor
-            "rgba(255, 127, 14, 0.2)",  # Turuncu
-            "rgba(23, 190, 207, 0.2)",  # Turkuaz
-            "rgba(12, 75, 142, 0.2)"    # Lacivert
-        ]
-        
-        # Vurgulama için parlaklık renkleri
-        glow_colors = [
-            "#3498db",  # Açık Mavi
-            "#2ecc71",  # Açık Yeşil
-            "#e74c3c",  # Açık Kırmızı
-            "#9b59b6",  # Açık Mor
-            "#f39c12",  # Açık Turuncu
-            "#1abc9c",  # Açık Turkuaz
-            "#2980b9"   # Açık Lacivert
-        ]
-        
-        # Köşe yuvarlaklığı için yarıçap
-        corner_radius = 3
+            # Modern ve tıbbi görüntülemeye uygun renk paleti
+            colors = [
+                "#1f77b4",  # Mavi
+                "#2ca02c",  # Yeşil
+                "#d62728",  # Kırmızı
+                "#9467bd",  # Mor
+                "#ff7f0e",  # Turuncu
+                "#17becf",  # Turkuaz
+                "#0c4b8e"   # Lacivert
+            ]
+            
+            # Yarı saydam dolgu renkleri
+            fill_colors = [
+                "rgba(31, 119, 180, 0.2)",  # Mavi
+                "rgba(44, 160, 44, 0.2)",   # Yeşil
+                "rgba(214, 39, 40, 0.2)",   # Kırmızı
+                "rgba(148, 103, 189, 0.2)", # Mor
+                "rgba(255, 127, 14, 0.2)",  # Turuncu
+                "rgba(23, 190, 207, 0.2)",  # Turkuaz
+                "rgba(12, 75, 142, 0.2)"    # Lacivert
+            ]
+            
+            # Vurgulama için parlaklık renkleri
+            glow_colors = [
+                "#3498db",  # Açık Mavi
+                "#2ecc71",  # Açık Yeşil
+                "#e74c3c",  # Açık Kırmızı
+                "#9b59b6",  # Açık Mor
+                "#f39c12",  # Açık Turuncu
+                "#1abc9c",  # Açık Turkuaz
+                "#2980b9"   # Açık Lacivert
+            ]
+            
+            # Köşe yuvarlaklığı için yarıçap
+            corner_radius = 3
 
-        # Add detected areas with custom shapes based on class
-        if len(results) > 0 and results[0].boxes is not None:
-            boxes = results[0].boxes
+            # Add detected areas with custom shapes based on class
+            if len(results) > 0 and results[0].boxes is not None:
+                boxes = results[0].boxes
 
-            # Her tespitin bölge ismini ekle (sol üst köşe)
-            region_names = set()
-            for i, box in enumerate(boxes):
-                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                conf = float(box.conf)
-                cls = int(box.cls)
-                full_label = results[0].names[cls]
-                base_label = full_label.split('_')[0].upper()
-                if base_label in ["HIP", "SHOULDER"]:
-                    region_names.add(base_label)
+                # Her tespitin bölge ismini ekle (sol üst köşe)
+                region_names = set()
+                for i, box in enumerate(boxes):
+                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                    conf = float(box.conf)
+                    cls = int(box.cls)
+                    full_label = results[0].names[cls]
+                    base_label = full_label.split('_')[0].upper()
+                    if base_label in ["HIP", "SHOULDER"]:
+                        region_names.add(base_label)
 
-                # Bölge ismini görüntüde göster
-                cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
-                if "true" in full_label.lower():  # Yalnızca "true" tespitler için çizim
-                    # Ana dikdörtgen yerine implant boyunca çizgi çizelim
-                    fig.add_shape(
-                        type="line",
-                        x0=x1, y0=y1, x1=x2, y1=y2,
-                        line=dict(
-                            color=colors[i % len(colors)],
-                            width=3,
-                            dash="solid"
-                        ),
-                        layer="below",
-                        xref="x", yref="y"
-                    )
-                    
-                    # Köşeleri yuvarlatmak için daireler yerine implant kenarlarını çizelim
-                    # Üst kenar
-                    fig.add_shape(
-                        type="line",
-                        x0=x1, y0=y1, x1=x2, y1=y1,
-                        line=dict(
-                            color=colors[i % len(colors)],
-                            width=2
-                        ),
-                        layer="below",
-                        xref="x", yref="y"
-                    )
-                    
-                    # Alt kenar
-                    fig.add_shape(
-                        type="line",
-                        x0=x1, y0=y2, x1=x2, y1=y2,
-                        line=dict(
-                            color=colors[i % len(colors)],
-                            width=2
-                        ),
-                        layer="below",
-                        xref="x", yref="y"
-                    )
-                    
-                    # Sol kenar
-                    fig.add_shape(
-                        type="line",
-                        x0=x1, y0=y1, x1=x1, y1=y2,
-                        line=dict(
-                            color=colors[i % len(colors)],
-                            width=2
-                        ),
-                        layer="below",
-                        xref="x", yref="y"
-                    )
-                    
-                    # Sağ kenar
-                    fig.add_shape(
-                        type="line",
-                        x0=x2, y0=y1, x1=x2, y1=y2,
-                        line=dict(
-                            color=colors[i % len(colors)],
-                            width=2
-                        ),
-                        layer="below",
-                        xref="x", yref="y"
-                    )
-                    
-                    # Merkez işaretçisi - Görünür bir legend oluşturmak için
-                    fig.add_trace(go.Scatter(
-                        x=[cx],
-                        y=[cy],
-                        mode="markers+lines",
-                        marker=dict(
-                            symbol="diamond",
-                            size=8,
-                            color=colors[i % len(colors)],
-                            line=dict(width=1, color="#ffffff")
-                        ),
-                        name=f"{base_label}",
-                        showlegend=True,
-                        hoverinfo="text",
-                        hovertext=f"{base_label}: {conf:.2f}"
-                    ))
-                    
-                    # Etiket - Üst üste gelmemesi için pozisyonu ayarlayalım
-                    # Her etiket için farklı bir y-offset kullanarak üst üste gelmelerini önleyelim
-                    y_offset = 15 * (i % 5)  # 5 farklı seviye kullanarak etiketleri dağıtalım
-                    
-                    fig.add_annotation(
-                        x=x1, y=y1-10-y_offset,
-                        text=f"{base_label}: {conf:.2f}",
-                        showarrow=True,
-                        arrowhead=2,
-                        arrowsize=1,
-                        arrowwidth=2,
-                        arrowcolor=colors[i % len(colors)],
-                        font=dict(size=12, color="#ffffff"),
-                        align="center",
-                        bordercolor=colors[i % len(colors)],
-                        borderwidth=2,
-                        bgcolor="rgba(0, 0, 0, 0.5)",
-                        borderpad=4
-                    )
+                    # Bölge ismini görüntüde göster
+                    cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+                    if "true" in full_label.lower():  # Yalnızca "true" tespitler için çizim
+                        # Ana dikdörtgen yerine implant boyunca çizgi çizelim
+                        fig.add_shape(
+                            type="line",
+                            x0=x1, y0=y1, x1=x2, y1=y2,
+                            line=dict(
+                                color=colors[i % len(colors)],
+                                width=3,
+                                dash="solid"
+                            ),
+                            layer="below",
+                            xref="x", yref="y"
+                        )
+                        
+                        # Köşeleri yuvarlatmak için daireler yerine implant kenarlarını çizelim
+                        # Üst kenar
+                        fig.add_shape(
+                            type="line",
+                            x0=x1, y0=y1, x1=x2, y1=y1,
+                            line=dict(
+                                color=colors[i % len(colors)],
+                                width=2
+                            ),
+                            layer="below",
+                            xref="x", yref="y"
+                        )
+                        
+                        # Alt kenar
+                        fig.add_shape(
+                            type="line",
+                            x0=x1, y0=y2, x1=x2, y1=y2,
+                            line=dict(
+                                color=colors[i % len(colors)],
+                                width=2
+                            ),
+                            layer="below",
+                            xref="x", yref="y"
+                        )
+                        
+                        # Sol kenar
+                        fig.add_shape(
+                            type="line",
+                            x0=x1, y0=y1, x1=x1, y1=y2,
+                            line=dict(
+                                color=colors[i % len(colors)],
+                                width=2
+                            ),
+                            layer="below",
+                            xref="x", yref="y"
+                        )
+                        
+                        # Sağ kenar
+                        fig.add_shape(
+                            type="line",
+                            x0=x2, y0=y1, x1=x2, y1=y2,
+                            line=dict(
+                                color=colors[i % len(colors)],
+                                width=2
+                            ),
+                            layer="below",
+                            xref="x", yref="y"
+                        )
+                        
+                        # Merkez işaretçisi - Görünür bir legend oluşturmak için
+                        fig.add_trace(go.Scatter(
+                            x=[cx],
+                            y=[cy],
+                            mode="markers+lines",
+                            marker=dict(
+                                symbol="diamond",
+                                size=8,
+                                color=colors[i % len(colors)],
+                                line=dict(width=1, color="#ffffff")
+                            ),
+                            name=f"{base_label}",
+                            showlegend=True,
+                            hoverinfo="text",
+                            hovertext=f"{base_label}: {conf:.2f}"
+                        ))
+                        
+                        # Etiket - Üst üste gelmemesi için pozisyonu ayarlayalım
+                        # Her etiket için farklı bir y-offset kullanarak üst üste gelmelerini önleyelim
+                        y_offset = 15 * (i % 5)  # 5 farklı seviye kullanarak etiketleri dağıtalım
+                        
+                        fig.add_annotation(
+                            x=x1, y=y1-10-y_offset,
+                            text=f"{base_label}: {conf:.2f}",
+                            showarrow=True,
+                            arrowhead=2,
+                            arrowsize=1,
+                            arrowwidth=2,
+                            arrowcolor=colors[i % len(colors)],
+                            font=dict(size=12, color="#ffffff"),
+                            align="center",
+                            bordercolor=colors[i % len(colors)],
+                            borderwidth=2,
+                            bgcolor="rgba(0, 0, 0, 0.5)",
+                            borderpad=4
+                        )
 
             # Update layout with improved legend
             fig.update_layout(
@@ -1110,8 +1111,8 @@ else:
                         buttons=[
                             dict(
                                 args=[{"visible": [True] * len(fig.data)}],
-                                label="Tümünü Göster" if selected_language == "Türkçe" else "Show All",
-                                method="update"
+                                      label="Tümünü Göster" if selected_language == "Türkçe" else "Show All",
+                                      method="update"
                             ),
                             dict(
                                 args=[{"visible": [False] * len(fig.data)}],

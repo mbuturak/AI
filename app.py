@@ -1115,7 +1115,7 @@ else:
                                 borderwidth=2,
                                 bgcolor="rgba(0, 0, 0, 0.5)",
                                 borderpad=4
-                            ))
+                            )
 
             # Update layout with improved legend
             fig.update_layout(

@@ -535,6 +535,22 @@ if selected_demo:
                             borderpad=4
                         )
 
+            # İmplant bilgilerini sidebar'a ekle
+            if detected_implants:
+                st.sidebar.markdown("---")
+                st.sidebar.markdown("### " + ("İmplant Bilgileri" if selected_language == "Türkçe" else "Implant Information"))
+                for i, implant in enumerate(detected_implants):
+                    with st.sidebar.expander(f"{implant['region']} - {implant['brand']} ({implant['confidence']:.2f})"):
+                        st.markdown(f"""
+                        **{("Bölge" if selected_language == "Türkçe" else "Region")}:** {implant['region']}  
+                        **{("Marka" if selected_language == "Türkçe" else "Brand")}:** {implant['brand']}  
+                        **{("Model" if selected_language == "Türkçe" else "Model")}:** {implant['model']}  
+                        **{("Güven" if selected_language == "Türkçe" else "Confidence")}:** {implant['confidence']:.2f}
+                        """)
+            else:
+                st.sidebar.markdown("---")
+                st.sidebar.info("İmplant tespit edilemedi." if selected_language == "Türkçe" else "No implants detected.")
+
             # Update layout with improved legend
             fig.update_layout(
                 showlegend=True,
@@ -633,19 +649,7 @@ if selected_demo:
                 st.markdown("**Detected Regions**" if selected_language == "English" else "**Tespit Edilen Bölgeler**")
                 st.plotly_chart(fig, use_container_width=True)
                 
-                # İmplant bilgilerini göster
-                if detected_implants:
-                    st.markdown("### " + ("İmplant Bilgileri" if selected_language == "Türkçe" else "Implant Information"))
-                    for i, implant in enumerate(detected_implants):
-                        with st.expander(f"{implant['region']} - {implant['brand']} ({implant['confidence']:.2f})"):
-                            st.markdown(f"""
-                            **{("Bölge" if selected_language == "Türkçe" else "Region")}:** {implant['region']}  
-                            **{("Marka" if selected_language == "Türkçe" else "Brand")}:** {implant['brand']}  
-                            **{("Model" if selected_language == "Türkçe" else "Model")}:** {implant['model']}  
-                            **{("Güven" if selected_language == "Türkçe" else "Confidence")}:** {implant['confidence']:.2f}
-                            """)
-                else:
-                    st.info("İmplant tespit edilemedi." if selected_language == "Türkçe" else "No implants detected.")
+                # İmplant bilgilerini gösterme kısmını kaldırdık (sidebar'a taşındı)
 
             # Analiz bölümü
             st.markdown("---")
@@ -1117,6 +1121,22 @@ else:
                                 borderpad=4
                             )
 
+            # İmplant bilgilerini sidebar'a ekle
+            if detected_implants:
+                st.sidebar.markdown("---")
+                st.sidebar.markdown("### " + ("İmplant Bilgileri" if selected_language == "Türkçe" else "Implant Information"))
+                for i, implant in enumerate(detected_implants):
+                    with st.sidebar.expander(f"{implant['region']} - {implant['brand']} ({implant['confidence']:.2f})"):
+                        st.markdown(f"""
+                        **{("Bölge" if selected_language == "Türkçe" else "Region")}:** {implant['region']}  
+                        **{("Marka" if selected_language == "Türkçe" else "Brand")}:** {implant['brand']}  
+                        **{("Model" if selected_language == "Türkçe" else "Model")}:** {implant['model']}  
+                        **{("Güven" if selected_language == "Türkçe" else "Confidence")}:** {implant['confidence']:.2f}
+                        """)
+            else:
+                st.sidebar.markdown("---")
+                st.sidebar.info("İmplant tespit edilemedi." if selected_language == "Türkçe" else "No implants detected.")
+
             # Update layout with improved legend
             fig.update_layout(
                 showlegend=True,
@@ -1215,19 +1235,7 @@ else:
                 st.markdown("**Detected Regions**" if selected_language == "English" else "**Tespit Edilen Bölgeler**")
                 st.plotly_chart(fig, use_container_width=True)
                 
-                # İmplant bilgilerini göster
-                if detected_implants:
-                    st.markdown("### " + ("İmplant Bilgileri" if selected_language == "Türkçe" else "Implant Information"))
-                    for i, implant in enumerate(detected_implants):
-                        with st.expander(f"{implant['region']} - {implant['brand']} ({implant['confidence']:.2f})"):
-                            st.markdown(f"""
-                            **{("Bölge" if selected_language == "Türkçe" else "Region")}:** {implant['region']}  
-                            **{("Marka" if selected_language == "Türkçe" else "Brand")}:** {implant['brand']}  
-                            **{("Model" if selected_language == "Türkçe" else "Model")}:** {implant['model']}  
-                            **{("Güven" if selected_language == "Türkçe" else "Confidence")}:** {implant['confidence']:.2f}
-                            """)
-                else:
-                    st.info("İmplant tespit edilemedi." if selected_language == "Türkçe" else "No implants detected.")
+                # İmplant bilgilerini gösterme kısmını kaldırdık (sidebar'a taşındı)
 
             # Analiz bölümü
             st.markdown("---")

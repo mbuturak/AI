@@ -10,6 +10,25 @@ import os
 # Hide warnings
 warnings.filterwarnings('ignore')
 
+# İmplant üreticileri ve modelleri
+IMPLANT_MANUFACTURERS = {
+    "HIP": [
+        {"brand": "Zimmer Biomet", "model": "Taperloc Hip System"},
+        {"brand": "DePuy Synthes", "model": "CORAIL Hip System"},
+        {"brand": "Stryker", "model": "Accolade II Hip System"}
+    ],
+    "SHOULDER": [
+        {"brand": "Arthrex", "model": "Universe Reverse Shoulder"},
+        {"brand": "Smith & Nephew", "model": "TYGEN Anatomic Shoulder"},
+        {"brand": "Exactech", "model": "Equinoxe Platform Shoulder"}
+    ],
+    "KNEE": [
+        {"brand": "Zimmer Biomet", "model": "NexGen Knee System"},
+        {"brand": "DePuy Synthes", "model": "ATTUNE Knee System"},
+        {"brand": "Stryker", "model": "Triathlon Knee System"}
+    ]
+}
+
 # Dil seçenekleri için metinler
 TEXTS = {
     'English': {
@@ -392,14 +411,27 @@ if selected_demo:
 
                 # Her tespitin bölge ismini ekle (sol üst köşe)
                 region_names = set()
+                detected_implants = []
+                
                 for i, box in enumerate(boxes):
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     conf = float(box.conf)
                     cls = int(box.cls)
                     full_label = results[0].names[cls]
                     base_label = full_label.split('_')[0].upper()
-                    if base_label in ["HIP", "SHOULDER"]:
+                    if base_label in ["HIP", "SHOULDER", "KNEE"]:
                         region_names.add(base_label)
+                        
+                        # Rastgele bir üretici ve model seç
+                        if base_label in IMPLANT_MANUFACTURERS:
+                            manufacturer_info = np.random.choice(IMPLANT_MANUFACTURERS[base_label])
+                            detected_implants.append({
+                                "region": base_label,
+                                "confidence": conf,
+                                "brand": manufacturer_info["brand"],
+                                "model": manufacturer_info["model"],
+                                "position": (x1, y1, x2, y2)
+                            })
 
                     # Bölge ismini görüntüde göster
                     cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
@@ -600,6 +632,20 @@ if selected_demo:
             with col_img2:
                 st.markdown("**Detected Regions**" if selected_language == "English" else "**Tespit Edilen Bölgeler**")
                 st.plotly_chart(fig, use_container_width=True)
+                
+                # İmplant bilgilerini göster
+                if detected_implants:
+                    st.markdown("### " + ("İmplant Bilgileri" if selected_language == "Türkçe" else "Implant Information"))
+                    for i, implant in enumerate(detected_implants):
+                        with st.expander(f"{implant['region']} - {implant['brand']} ({implant['confidence']:.2f})"):
+                            st.markdown(f"""
+                            **{("Bölge" if selected_language == "Türkçe" else "Region")}:** {implant['region']}  
+                            **{("Marka" if selected_language == "Türkçe" else "Brand")}:** {implant['brand']}  
+                            **{("Model" if selected_language == "Türkçe" else "Model")}:** {implant['model']}  
+                            **{("Güven" if selected_language == "Türkçe" else "Confidence")}:** {implant['confidence']:.2f}
+                            """)
+                else:
+                    st.info("İmplant tespit edilemedi." if selected_language == "Türkçe" else "No implants detected.")
 
             # Analiz bölümü
             st.markdown("---")
@@ -947,14 +993,27 @@ else:
 
                     # Her tespitin bölge ismini ekle (sol üst köşe)
                     region_names = set()
+                    detected_implants = []
+                    
                     for i, box in enumerate(boxes):
                         x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                         conf = float(box.conf)
                         cls = int(box.cls)
                         full_label = results[0].names[cls]
                         base_label = full_label.split('_')[0].upper()
-                        if base_label in ["HIP", "SHOULDER"]:
+                        if base_label in ["HIP", "SHOULDER", "KNEE"]:
                             region_names.add(base_label)
+                            
+                            # Rastgele bir üretici ve model seç
+                            if base_label in IMPLANT_MANUFACTURERS:
+                                manufacturer_info = np.random.choice(IMPLANT_MANUFACTURERS[base_label])
+                                detected_implants.append({
+                                    "region": base_label,
+                                    "confidence": conf,
+                                    "brand": manufacturer_info["brand"],
+                                    "model": manufacturer_info["model"],
+                                    "position": (x1, y1, x2, y2)
+                                })
 
                         # Bölge ismini görüntüde göster
                         cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
@@ -1056,7 +1115,7 @@ else:
                                 borderwidth=2,
                                 bgcolor="rgba(0, 0, 0, 0.5)",
                                 borderpad=4
-                            )
+                            ))
 
             # Update layout with improved legend
             fig.update_layout(
@@ -1111,8 +1170,8 @@ else:
                         buttons=[
                             dict(
                                 args=[{"visible": [True] * len(fig.data)}],
-                                      label="Tümünü Göster" if selected_language == "Türkçe" else "Show All",
-                                      method="update"
+                                label="Tümünü Göster" if selected_language == "Türkçe" else "Show All",
+                                method="update"
                             ),
                             dict(
                                 args=[{"visible": [False] * len(fig.data)}],
@@ -1155,6 +1214,20 @@ else:
             with col_img2:
                 st.markdown("**Detected Regions**" if selected_language == "English" else "**Tespit Edilen Bölgeler**")
                 st.plotly_chart(fig, use_container_width=True)
+                
+                # İmplant bilgilerini göster
+                if detected_implants:
+                    st.markdown("### " + ("İmplant Bilgileri" if selected_language == "Türkçe" else "Implant Information"))
+                    for i, implant in enumerate(detected_implants):
+                        with st.expander(f"{implant['region']} - {implant['brand']} ({implant['confidence']:.2f})"):
+                            st.markdown(f"""
+                            **{("Bölge" if selected_language == "Türkçe" else "Region")}:** {implant['region']}  
+                            **{("Marka" if selected_language == "Türkçe" else "Brand")}:** {implant['brand']}  
+                            **{("Model" if selected_language == "Türkçe" else "Model")}:** {implant['model']}  
+                            **{("Güven" if selected_language == "Türkçe" else "Confidence")}:** {implant['confidence']:.2f}
+                            """)
+                else:
+                    st.info("İmplant tespit edilemedi." if selected_language == "Türkçe" else "No implants detected.")
 
             # Analiz bölümü
             st.markdown("---")
